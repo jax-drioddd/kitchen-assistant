@@ -80,6 +80,7 @@ export default function Dashboard({ initialWeek }: { initialWeek: DayEntry[] | n
   const [groceryLoading, setGroceryLoading] = useState(false);
   const [groceryUrl, setGroceryUrl] = useState<string | null>(null);
   const [groceryItems, setGroceryItems] = useState<Ingredient[] | null>(null);
+  const [copied, setCopied] = useState(false);
   const [chatInput, setChatInput] = useState("");
   const [chatMessages, setChatMessages] = useState<
     { role: "user" | "assistant"; text: string }[]
@@ -132,6 +133,41 @@ export default function Dashboard({ initialWeek }: { initialWeek: DayEntry[] | n
       setError(err.message ?? "Couldn't build the grocery list. Try again.");
     } finally {
       setGroceryLoading(false);
+    }
+  }
+
+  function groceryListAsText(): string {
+    if (!groceryItems) return "";
+    return groceryItems
+      .map((ing) => `${ing.quantity} ${ing.unit} ${ing.name}`.replace(/\s+/g, " ").trim())
+      .join("\n");
+  }
+
+  async function handleExport() {
+    const text = groceryListAsText();
+
+    // Native share sheet — lets the person pick any app that accepts shared
+    // text (Notes reliably shows up; Reminders typically doesn't, since
+    // Apple hasn't given it a share extension for plain text — that's a
+    // platform limitation, not something fixable here).
+    if (typeof navigator !== "undefined" && navigator.share) {
+      try {
+        await navigator.share({ title: "Grocery list", text });
+        return;
+      } catch {
+        // User cancelled the share sheet, or it failed — fall through to
+        // the clipboard fallback below rather than leaving them stuck.
+      }
+    }
+
+    // Fallback: copy to clipboard, works everywhere including for pasting
+    // straight into Reminders manually.
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2500);
+    } catch {
+      setError("Couldn't export the list. Try again.");
     }
   }
 
@@ -456,6 +492,12 @@ export default function Dashboard({ initialWeek }: { initialWeek: DayEntry[] | n
                 className="rounded-full bg-[#F7F6F2] px-5 py-2.5 text-sm font-semibold text-[#1C1C1E]/70 transition-all hover:bg-[#EDECE7]"
               >
                 Print list
+              </button>
+              <button
+                onClick={handleExport}
+                className="rounded-full bg-[#F7F6F2] px-5 py-2.5 text-sm font-semibold text-[#1C1C1E]/70 transition-all hover:bg-[#EDECE7]"
+              >
+                {copied ? "Copied ✓" : "Export to Notes, Reminders…"}
               </button>
               <button
                 onClick={handleGetGroceryList}
