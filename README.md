@@ -1,8 +1,7 @@
 # Kitchen Assistant 🍽️
 
 An AI-powered weekly meal planner that goes all the way to a filled grocery
-cart — not just recipe ideas. Built as a Founders Office case study project
-for Capsule Pharmacy.
+cart — not just recipe ideas.
 
 **Live:** [kitchenassistant-alpha.vercel.app](https://kitchenassistant-alpha.vercel.app)
 
