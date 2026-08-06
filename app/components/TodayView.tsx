@@ -50,6 +50,7 @@ export default function TodayView({
     week?.find((d) => d.day === todayName)?.day ?? week?.[0]?.day ?? null;
   const [selectedDay, setSelectedDay] = useState<string | null>(defaultDay);
   const [ratedMeals, setRatedMeals] = useState<Record<string, "cooked" | "skipped">>({});
+  const [cookedPendingRating, setCookedPendingRating] = useState<Record<string, string>>({});
   const [error, setError] = useState<string | null>(null);
   const [cookingMode, setCookingMode] = useState(false);
   const [servingsOverride, setServingsOverride] = useState<Record<string, number>>({});
@@ -65,17 +66,41 @@ export default function TodayView({
       .catch(() => {});
   }, []);
 
-  async function handleFeedback(mealId: string | undefined, status: "cooked" | "skipped", rating: number | null) {
+  async function handleMarkStatus(mealId: string | undefined, status: "cooked" | "skipped") {
     if (!mealId) return;
     try {
-      await fetch("/api/meal-feedback", {
+      const res = await fetch("/api/meal-feedback", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ meal_id: mealId, status, rating }),
+        body: JSON.stringify({ meal_id: mealId, status, rating: null }),
       });
-      setRatedMeals((prev) => ({ ...prev, [mealId]: status }));
+      const data = await res.json();
+      if (status === "skipped") {
+        setRatedMeals((prev) => ({ ...prev, [mealId]: "skipped" }));
+      } else {
+        // Cooked, but not rated yet — inventory already depleted server-side.
+        // Move to the second stage (rating) instead of marking fully done.
+        setCookedPendingRating((prev) => ({ ...prev, [mealId]: data.history_id }));
+      }
     } catch {
-      setError("Couldn't save that feedback. Try again.");
+      setError("Couldn't save that. Try again.");
+    }
+  }
+
+  async function handleRate(mealId: string | undefined, rating: number | null) {
+    if (!mealId) return;
+    const historyId = cookedPendingRating[mealId];
+    try {
+      if (historyId) {
+        await fetch("/api/meal-feedback", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ history_id: historyId, rating }),
+        });
+      }
+      setRatedMeals((prev) => ({ ...prev, [mealId]: "cooked" }));
+    } catch {
+      setError("Couldn't save that rating. Try again.");
     }
   }
 
@@ -262,15 +287,29 @@ export default function TodayView({
                     ? "Marked as skipped — won't suggest this again soon."
                     : "Thanks — noted for next time."}
                 </p>
+              ) : entry.meal.id && cookedPendingRating[entry.meal.id] ? (
+                <div>
+                  <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-[#1A1A1A]/40">
+                    How was it?
+                  </p>
+                  <div className="flex flex-wrap gap-4 text-sm font-semibold text-[#1A1A1A]/50">
+                    <button onClick={() => handleRate(entry.meal.id, 5)} className="hover:text-[#1A1A1A]">
+                      👍 Loved it
+                    </button>
+                    <button onClick={() => handleRate(entry.meal.id, 1)} className="hover:text-[#1A1A1A]">
+                      👎 Not for me
+                    </button>
+                    <button onClick={() => handleRate(entry.meal.id, null)} className="text-[#1A1A1A]/30 hover:text-[#1A1A1A]/60">
+                      Skip rating
+                    </button>
+                  </div>
+                </div>
               ) : (
                 <div className="flex flex-wrap gap-4 text-sm font-semibold text-[#1A1A1A]/50">
-                  <button onClick={() => handleFeedback(entry.meal.id, "cooked", 5)} className="hover:text-[#1A1A1A]">
-                    👍 Loved it
+                  <button onClick={() => handleMarkStatus(entry.meal.id, "cooked")} className="hover:text-[#1A1A1A]">
+                    ✅ Finished cooking
                   </button>
-                  <button onClick={() => handleFeedback(entry.meal.id, "cooked", 1)} className="hover:text-[#1A1A1A]">
-                    👎 Not for me
-                  </button>
-                  <button onClick={() => handleFeedback(entry.meal.id, "skipped", null)} className="hover:text-[#1A1A1A]">
+                  <button onClick={() => handleMarkStatus(entry.meal.id, "skipped")} className="hover:text-[#1A1A1A]">
                     ⏭️ Skipped it
                   </button>
                 </div>

@@ -1,14 +1,17 @@
 // app/api/meal-feedback/route.ts
 //
-// Records a rating or skip for a meal. This is what closes the loop —
-// /api/generate-week already reads meal_history to avoid repeating recent
-// meals and to steer away from anything rated poorly.
+// Two-stage feedback: first "finished cooking" or "skipped" (which drives
+// inventory depletion — cooking is what uses ingredients, regardless of
+// whether you liked the result), then an optional separate rating pass
+// (which does not re-trigger depletion, just updates the same row).
 //
-// When status is "cooked", also estimates inventory depletion: Claude
-// reasons about what was likely used from current stock, the same way a
-// person eyeballing their pantry would — not exact unit-reconciliation,
-// which needs receipt-level input to be genuinely accurate. Best-effort:
-// if this fails, the rating/skip itself still gets recorded.
+// /api/generate-week reads this table to avoid repeating recent meals and
+// to steer away from anything rated poorly.
+//
+// Depletion: Claude reasons about what was likely used from current stock,
+// the same way a person eyeballing their pantry would — not exact unit-
+// reconciliation, which needs receipt-level input to be genuinely accurate.
+// Best-effort: if this fails, the status/rating itself still gets recorded.
 
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
@@ -20,18 +23,35 @@ const supabase = createClient(
 
 export async function POST(req: NextRequest) {
   try {
-    const { meal_id, status, rating } = await req.json();
+    const { meal_id, status, rating, history_id } = await req.json();
+
+    // Rating-only update on an already-logged "cooked" entry — this is the
+    // second stage of the flow (mark finished cooking first, which drives
+    // inventory; rate separately afterward, which doesn't re-trigger it).
+    if (history_id) {
+      const { error } = await supabase
+        .from("meal_history")
+        .update({ rating: rating ?? null })
+        .eq("id", history_id);
+
+      if (error) throw new Error(error.message);
+      return NextResponse.json({ success: true });
+    }
 
     if (!meal_id || !status) {
       return NextResponse.json({ error: "meal_id and status are required" }, { status: 400 });
     }
 
-    const { error } = await supabase.from("meal_history").insert({
-      meal_id,
-      date: new Date().toISOString().slice(0, 10),
-      status, // "cooked" | "skipped"
-      rating: rating ?? null,
-    });
+    const { data: inserted, error } = await supabase
+      .from("meal_history")
+      .insert({
+        meal_id,
+        date: new Date().toISOString().slice(0, 10),
+        status, // "cooked" | "skipped"
+        rating: rating ?? null,
+      })
+      .select("id")
+      .single();
 
     if (error) throw new Error(error.message);
 
@@ -43,7 +63,7 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    return NextResponse.json({ success: true });
+    return NextResponse.json({ success: true, history_id: inserted?.id ?? null });
   } catch (err: any) {
     console.error("meal-feedback error:", err);
     return NextResponse.json({ error: err.message ?? "Unknown error" }, { status: 500 });
