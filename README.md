@@ -42,6 +42,30 @@ persistent Google Sheet (via the Sheets API), and a third-party Google
 Workspace add-on ("Grocery Shopper for Google Sheets") handles the handoff
 to a real, matched Instacart cart from there.
 
+Clicking "Order on Instacart" no longer requires opening that sheet by
+hand. `/api/order-instacart` drives a headless, already-authenticated
+browser session (via [Browserbase](https://browserbase.com)) through the
+same steps a person would do manually — open the sheet, select column A,
+click "Open with Instacart" inside the add-on's sidebar — and redirects the
+user straight to the resulting cart. See
+`app/lib/instacart-automation.ts` for the flow itself.
+
+This requires a one-time manual setup step, since the app can't log into a
+personal Google account on its own: run
+`pnpm setup:browserbase-context` locally, which opens a live browser view
+for you to log in and authorize the add-on once. That session's auth state
+gets persisted as a Browserbase "context" and reused on every real run
+afterward, so production never has to log in itself — which is also what
+keeps it from tripping Google's automated-login / CAPTCHA detection on
+every order.
+
+**Known fragility, not yet hardened:** the add-on's sidebar selectors in
+`instacart-automation.ts` are best-effort and marked `CONFIRM LIVE` where
+they most need checking against the real DOM — this needs one dry run
+against a real Browserbase session before it's trustworthy end to end. It's
+also inherently coupled to a third-party add-on's UI, which can change
+without notice.
+
 ## Tech stack
 
 - **Next.js** (App Router) + **Tailwind CSS**
@@ -66,7 +90,14 @@ SUPABASE_SERVICE_ROLE_KEY=
 GOOGLE_SHEET_ID=
 GOOGLE_CREDENTIALS_JSON=
 PEXELS_API_KEY=
+BROWSERBASE_API_KEY=
+BROWSERBASE_PROJECT_ID=
+BROWSERBASE_CONTEXT_ID=
 ```
+
+`BROWSERBASE_CONTEXT_ID` comes from running
+`pnpm setup:browserbase-context` once (see above) — it doesn't exist until
+you do.
 
 Run the schema in `schema.sql` against your Supabase project via the SQL
 Editor, then:
@@ -81,8 +112,9 @@ pnpm dev
   this is primarily a display layer
 - Simple manual inventory tracking (deliberately not full unit-reconciled
   depletion — that's a genuinely harder problem, scoped as a later phase)
-- Full Instacart Developer Platform integration, if their application
-  process reopens
-- Browser-automation (Axiom.ai) to eliminate the manual Google Sheets step
-  entirely — scoped but not attempted; real reliability risk around
-  automating a third-party add-on's UI and Google login flows
+- Browser-automation to eliminate the manual Google Sheets step is now
+  wired up (`/api/order-instacart` via Browserbase) but needs a live dry
+  run to confirm the add-on's sidebar selectors, plus real-world testing
+  of how often Google flags the persisted session over time
+- Full Instacart Developer Platform integration would remove this whole
+  automation layer if their application process reopens for this account

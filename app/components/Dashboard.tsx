@@ -42,6 +42,7 @@ export default function Dashboard({ initialWeek }: { initialWeek: DayEntry[] | n
   const [groceryLoading, setGroceryLoading] = useState(false);
   const [groceryUrl, setGroceryUrl] = useState<string | null>(null);
   const [groceryItems, setGroceryItems] = useState<Ingredient[] | null>(null);
+  const [instacartLoading, setInstacartLoading] = useState(false);
   const [copied, setCopied] = useState(false);
   const [chatInput, setChatInput] = useState("");
   const [chatMessages, setChatMessages] = useState<
@@ -92,6 +93,20 @@ export default function Dashboard({ initialWeek }: { initialWeek: DayEntry[] | n
       setError(err.message ?? "Couldn't build the grocery list. Try again.");
     } finally {
       setGroceryLoading(false);
+    }
+  }
+
+  async function handleOrderInstacart() {
+    setError(null);
+    setInstacartLoading(true);
+    try {
+      const res = await fetch("/api/order-instacart", { method: "POST" });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? "Couldn't open Instacart. Try again.");
+      window.location.href = data.cart_url;
+    } catch (err: any) {
+      setError(err.message ?? "Couldn't open Instacart. Try again.");
+      setInstacartLoading(false);
     }
   }
 
@@ -364,9 +379,14 @@ export default function Dashboard({ initialWeek }: { initialWeek: DayEntry[] | n
             </ul>
             <div className="flex flex-wrap items-center gap-5 text-sm font-semibold">
               {groceryUrl && (
-                <a href={groceryUrl} target="_blank" rel="noopener noreferrer" style={{ color: ACCENT }}>
-                  Order on Instacart →
-                </a>
+                <button
+                  onClick={handleOrderInstacart}
+                  disabled={instacartLoading}
+                  style={{ color: ACCENT }}
+                  className="disabled:opacity-50"
+                >
+                  {instacartLoading ? "Opening Instacart…" : "Order on Instacart →"}
+                </button>
               )}
               <button onClick={() => window.print()} className="text-[#1A1A1A]/50 hover:text-[#1A1A1A]">
                 Print list
