@@ -143,7 +143,7 @@ export default function CookingMode({
   const split = panes.length === 2;
 
   return (
-    <div className="fixed inset-0 z-50 flex flex-col bg-[#1C1C1E] text-white">
+    <div className="fixed inset-0 z-50 flex flex-col bg-[#1A1A1A] text-white">
       {/* Top bar */}
       <div className="flex items-center justify-between px-6 py-5">
         <div>
@@ -226,7 +226,7 @@ export default function CookingMode({
                       <button
                         onClick={() => (timer.running ? pause(stepIndex) : startOrResume(stepIndex))}
                         disabled={timer.remaining === 0}
-                        className="rounded-full bg-[#E8674A] px-5 py-2.5 text-sm font-bold text-[#1C1C1E] shadow-md transition-all hover:scale-[1.02] disabled:opacity-40"
+                        className="rounded-full bg-[#E8674A] px-5 py-2.5 text-sm font-bold text-[#1A1A1A] shadow-md transition-all hover:scale-[1.02] disabled:opacity-40"
                       >
                         {timer.running ? "Pause" : timer.remaining === step.timer_seconds ? "Start" : "Resume"}
                       </button>
@@ -251,7 +251,7 @@ export default function CookingMode({
                 </button>
                 <button
                   onClick={() => nextAndClose(paneIdx)}
-                  className="w-full rounded-full bg-white px-4 py-2.5 text-sm font-bold text-[#1C1C1E] shadow-md transition-all hover:scale-[1.02]"
+                  className="w-full rounded-full bg-white px-4 py-2.5 text-sm font-bold text-[#1A1A1A] shadow-md transition-all hover:scale-[1.02]"
                 >
                   {willFinish ? "Finish 🎉" : "Next → (close this)"}
                 </button>
