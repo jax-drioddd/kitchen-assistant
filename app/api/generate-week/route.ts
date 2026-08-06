@@ -19,9 +19,11 @@ interface Preferences {
   skill_level: "beginner" | "intermediate" | "advanced";
   cuisine_leanings: string[];
   pantry_staples: string[];
+  default_servings: number;
 }
 
 interface Ingredient {
+  id: string; // 4-char id, e.g. "0001" — referenced by step content placeholders
   name: string;
   quantity: number;
   unit: string; // "" for countable items like "2 chicken breasts"
@@ -29,7 +31,7 @@ interface Ingredient {
 
 interface RecipeStep {
   title: string; // short summary, e.g. "Sear the chicken"
-  content: string; // full instruction text
+  content: string; // instruction text, with {id} placeholders referencing ingredients
   timer_seconds: number | null; // null for active steps with no waiting
 }
 
@@ -41,6 +43,7 @@ interface Meal {
   tags: string[];
   id?: string;
   image_url?: string | null;
+  base_servings?: number;
 }
 
 export async function POST(req: NextRequest) {
@@ -136,6 +139,7 @@ export async function POST(req: NextRequest) {
     //    failing the whole generation over a missing photo.
     const weekStart = getMonday(new Date()).toISOString().slice(0, 10);
     const dayToMealId: Record<string, string> = {};
+    const servings = (prefs as Preferences).default_servings ?? 2;
 
     for (const meal of week) {
       const imageUrl = await findMealPhoto(meal.name);
@@ -148,6 +152,7 @@ export async function POST(req: NextRequest) {
           instructions: meal.instructions,
           tags: meal.tags,
           image_url: imageUrl,
+          base_servings: servings,
         })
         .select("id")
         .single();
@@ -158,6 +163,7 @@ export async function POST(req: NextRequest) {
       dayToMealId[meal.day] = inserted.id;
       (meal as any).id = inserted.id;
       (meal as any).image_url = imageUrl;
+      (meal as any).base_servings = servings;
     }
 
     const { error: planError } = await supabase.from("weekly_plans").upsert({
@@ -180,7 +186,7 @@ function buildWeekPrompt(
   lowRatedMeals: string[],
   days: string[]
 ): string {
-  return `You are planning dinners for one person for these specific days: ${days.join(", ")}.
+  return `You are planning dinners for ${prefs.default_servings ?? 2} people for these specific days: ${days.join(", ")}.
 
 Respond with ONLY valid JSON — no markdown fences, no preamble, no explanation.
 The response must be a JSON array of exactly ${days.length} objects, one per day listed
@@ -190,11 +196,11 @@ above (use those exact day names), in this shape:
   {
     "day": "Monday",
     "name": "string",
-    "ingredients": [{ "name": "string", "quantity": number, "unit": "string" }],
+    "ingredients": [{ "id": "0001", "name": "string", "quantity": number, "unit": "string" }],
     "instructions": [
       {
         "title": "short summary, e.g. 'Sear the chicken'",
-        "content": "the full instruction text for this step",
+        "content": "the instruction text, referencing ingredients by placeholder like {0001} instead of writing the amount out",
         "timer_seconds": 300
       }
     ],
@@ -215,21 +221,25 @@ Variety constraints (real, not decorative):
 - Vary protein sources across the week — do not use the same primary protein more than twice
 - Vary cuisine style across the week, not the same cuisine 3+ days running
 
-Ingredient formatting rules (this matters for downstream deduping, be precise):
+Ingredient formatting rules (this matters for downstream deduping AND for servings scaling, be precise):
+- id: a unique 4-digit string per ingredient WITHIN THIS MEAL, e.g. "0001", "0002" — sequential is fine, they just need to be unique within one meal's ingredient list
+- Quantities are for ${prefs.default_servings ?? 2} servings — scale realistically for that many people, not a single portion
 - Use consistent, singular ingredient names ("chicken breast" not "chicken breasts")
 - For countable items, quantity is the count and unit is "" (e.g. {"name": "egg", "quantity": 4, "unit": ""})
 - For measured items, use standard units: lb, oz, cup, tbsp, tsp, g, ml
 - Do not use vague quantities like "a handful" or "to taste" — give a real number
 
-Step formatting rules (this powers a step-by-step cooking mode with timers, be precise):
+Step formatting rules (this powers a step-by-step cooking mode with timers AND live servings-scaling, be precise):
 - Break instructions into discrete steps — one clear action per step, not paragraphs
 - title: a short 2-5 word summary of the step, used as a header
-- content: the full instruction text for that step — include the SPECIFIC
-  AMOUNT of every ingredient used in that step (e.g. "Whisk together 2 tbsp
-  fish sauce, 1 tbsp tamarind paste, and 1 tsp brown sugar," not "whisk
-  together the fish sauce, tamarind, and sugar"). Someone using cooking mode
-  should never need to look back at a separate ingredients list — each step
-  must be fully self-contained with real quantities.
+- content: the instruction text. CRITICAL — whenever a step uses an ingredient
+  amount, reference it with its placeholder token (e.g. {0001}) instead of
+  writing the number and unit as plain text. Example: "Whisk together {0001},
+  {0002}, and {0003} in a small bowl." NOT "Whisk together 2 tbsp fish sauce,
+  1 tbsp tamarind paste, and 1 tsp brown sugar." The placeholder gets replaced
+  with the correctly-scaled amount at display time — if you write the amount
+  as plain text instead, it will be wrong whenever the person adjusts
+  servings. Every ingredient mention in step content MUST use its placeholder.
 - timer_seconds: include whenever the step involves waiting, cooking, baking,
   resting, marinating, chilling, boiling, or simmering — convert stated times
   to seconds (e.g. "12-15 minutes" → use the midpoint, 810). Omit (use null)

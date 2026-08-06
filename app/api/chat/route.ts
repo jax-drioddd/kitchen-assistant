@@ -19,6 +19,7 @@ interface Preferences {
   skill_level: string;
   cuisine_leanings: string[];
   pantry_staples: string[];
+  default_servings: number;
 }
 
 function getMonday(d: Date): string {
@@ -103,7 +104,7 @@ export async function POST(req: NextRequest) {
       reply: string;
       meal: {
         name: string;
-        ingredients: { name: string; quantity: number; unit: string }[];
+        ingredients: { id: string; name: string; quantity: number; unit: string }[];
         instructions: { title: string; content: string; timer_seconds: number | null }[];
         tags: string[];
       };
@@ -117,6 +118,7 @@ export async function POST(req: NextRequest) {
 
     // 3. Save the new meal, repoint that day in weekly_plans to it
     const imageUrl = await findMealPhoto(result.meal.name);
+    const servings = (prefs as Preferences)?.default_servings ?? 2;
 
     const { data: inserted, error: insertError } = await supabase
       .from("meals")
@@ -126,6 +128,7 @@ export async function POST(req: NextRequest) {
         instructions: result.meal.instructions,
         tags: result.meal.tags,
         image_url: imageUrl,
+        base_servings: servings,
       })
       .select("id")
       .single();
@@ -153,6 +156,7 @@ export async function POST(req: NextRequest) {
         instructions: result.meal.instructions,
         tags: result.meal.tags,
         image_url: imageUrl,
+        base_servings: servings,
       },
     });
   } catch (err: any) {
@@ -206,11 +210,11 @@ Respond with ONLY valid JSON, no markdown fences, no preamble, in this shape:
   "reply": "One short, natural sentence confirming what you changed and why.",
   "meal": {
     "name": "string",
-    "ingredients": [{ "name": "string", "quantity": number, "unit": "string" }],
+    "ingredients": [{ "id": "0001", "name": "string", "quantity": number, "unit": "string" }],
     "instructions": [
       {
         "title": "short summary, e.g. 'Sear the chicken'",
-        "content": "the full instruction text for this step",
+        "content": "the instruction text, referencing ingredients by placeholder like {0001} instead of writing the amount out",
         "timer_seconds": 300
       }
     ],
@@ -225,19 +229,23 @@ Hard constraints for the new meal:
 - Cuisine leanings to favor (not exclusive, just weighted toward): ${prefs?.cuisine_leanings?.join(", ") || "no strong preference"}
 - Assume these pantry staples are on hand, don't include them in ingredients: ${prefs?.pantry_staples?.join(", ") || "none"}
 - Should be genuinely different from what it's replacing — if they said "not chicken," don't substitute another chicken dish
+- Plan quantities for ${prefs?.default_servings ?? 2} servings, matching the rest of the week
 
-Ingredient formatting (matters for downstream deduping):
+Ingredient formatting (matters for downstream deduping AND servings scaling):
+- id: unique 4-digit string per ingredient within this meal (e.g. "0001")
 - Consistent singular names ("chicken breast" not "chicken breasts")
 - Countable items: quantity is the count, unit is "" (e.g. {"name": "egg", "quantity": 4, "unit": ""})
 - Measured items: standard units only (lb, oz, cup, tbsp, tsp, g, ml)
 - Real numbers only, never "a handful" or "to taste"
 
-Step formatting (powers step-by-step cooking mode with timers):
+Step formatting (powers step-by-step cooking mode with timers AND live servings-scaling):
 - One clear action per step, not paragraphs
-- title: short 2-5 word summary; content: the full instruction text,
-  including the SPECIFIC AMOUNT of every ingredient used in that step —
-  never just the ingredient name, so each step is self-contained without
-  needing to check the ingredients list
+- title: short 2-5 word summary
+- content: CRITICAL — reference every ingredient amount via its placeholder
+  token (e.g. {0001}), never write the amount as plain text. Example:
+  "Whisk together {0001} and {0002}." NOT "Whisk together 2 tbsp fish sauce
+  and 1 tsp sugar." The placeholder is replaced with the correctly-scaled
+  amount at display time; plain-text amounts break when servings change.
 - timer_seconds: include for any waiting/cooking/baking/resting/simmering
   step, converted to seconds (use the midpoint for a range). Omit (null) for
   purely active steps with no waiting.

@@ -10,6 +10,7 @@ interface Preferences {
   skill_level: string;
   cuisine_leanings: string[];
   pantry_staples: string[];
+  default_servings: number;
 }
 
 function TagInput({
@@ -186,6 +187,41 @@ export default function PreferencesPage() {
             onChange={(v) => setPrefs({ ...prefs, pantry_staples: v })}
             color="#5FA88A"
           />
+
+          <div className="mb-6">
+            <label className="mb-1 block text-sm font-bold text-[#1C1C1E]">
+              Usual servings
+            </label>
+            <p className="mb-3 text-xs text-[#1C1C1E]/40">
+              How many people you're usually cooking for — meals are planned
+              at this amount by default. You can still adjust per-recipe
+              before cooking.
+            </p>
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() =>
+                  setPrefs({
+                    ...prefs,
+                    default_servings: Math.max(1, (prefs.default_servings ?? 2) - 1),
+                  })
+                }
+                className="flex h-9 w-9 items-center justify-center rounded-full bg-[#F7F6F2] text-lg font-bold text-[#1C1C1E]/70 hover:bg-[#EDECE7]"
+              >
+                −
+              </button>
+              <span className="w-8 text-center text-lg font-bold text-[#1C1C1E]">
+                {prefs.default_servings ?? 2}
+              </span>
+              <button
+                onClick={() =>
+                  setPrefs({ ...prefs, default_servings: (prefs.default_servings ?? 2) + 1 })
+                }
+                className="flex h-9 w-9 items-center justify-center rounded-full bg-[#F7F6F2] text-lg font-bold text-[#1C1C1E]/70 hover:bg-[#EDECE7]"
+              >
+                +
+              </button>
+            </div>
+          </div>
 
           <div className="mb-6">
             <label className="mb-1 block text-sm font-bold text-[#1C1C1E]">

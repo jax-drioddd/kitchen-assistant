@@ -15,13 +15,13 @@ export async function GET() {
   const { data, error } = await supabase.from("preferences").select("*").single();
 
   if (error || !data) {
-    // No row yet — return sensible defaults so the form has something to show
     return NextResponse.json({
       dislikes: [],
       time_budget_minutes: 45,
       skill_level: "intermediate",
       cuisine_leanings: [],
       pantry_staples: [],
+      default_servings: 2,
     });
   }
 
@@ -31,22 +31,35 @@ export async function GET() {
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { dislikes, time_budget_minutes, skill_level, cuisine_leanings, pantry_staples } = body;
+    const {
+      dislikes,
+      time_budget_minutes,
+      skill_level,
+      cuisine_leanings,
+      pantry_staples,
+      default_servings,
+    } = body;
 
-    // Single-row table: update the existing row if one exists, otherwise insert
     const { data: existing } = await supabase.from("preferences").select("id").single();
+
+    const payload = {
+      dislikes,
+      time_budget_minutes,
+      skill_level,
+      cuisine_leanings,
+      pantry_staples,
+      default_servings,
+    };
 
     if (existing) {
       const { error } = await supabase
         .from("preferences")
-        .update({ dislikes, time_budget_minutes, skill_level, cuisine_leanings, pantry_staples })
+        .update(payload)
         .eq("id", existing.id);
 
       if (error) throw new Error(error.message);
     } else {
-      const { error } = await supabase
-        .from("preferences")
-        .insert({ dislikes, time_budget_minutes, skill_level, cuisine_leanings, pantry_staples });
+      const { error } = await supabase.from("preferences").insert(payload);
 
       if (error) throw new Error(error.message);
     }

@@ -3,10 +3,11 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { normalizeSteps } from "../lib/steps";
+import { normalizeSteps, scaleIngredients, renderStepContent } from "../lib/steps";
 import CookingMode from "./CookingMode";
 
 interface Ingredient {
+  id?: string;
   name: string;
   quantity: number;
   unit: string;
@@ -20,6 +21,7 @@ interface Meal {
   instructions: any[]; // legacy string[] or new {title,content,timer_seconds}[] — normalizeSteps() handles both
   tags: string[];
   image_url?: string | null;
+  base_servings?: number;
 }
 
 interface DayEntry {
@@ -54,6 +56,7 @@ export default function TodayView({
   const [ratedMeals, setRatedMeals] = useState<Record<string, "cooked" | "skipped">>({});
   const [error, setError] = useState<string | null>(null);
   const [cookingMode, setCookingMode] = useState(false);
+  const [servingsOverride, setServingsOverride] = useState<Record<string, number>>({});
 
   async function handleFeedback(mealId: string | undefined, status: "cooked" | "skipped", rating: number | null) {
     if (!mealId) return;
@@ -96,6 +99,20 @@ export default function TodayView({
   const accent = ACCENTS[dayIndex >= 0 ? dayIndex % ACCENTS.length : 0];
   const isToday = selectedDay === todayName;
   const isPast = dayIndex >= 0 && todayIndex >= 0 && dayIndex < todayIndex;
+
+  const baseServings = entry?.meal.base_servings ?? 2;
+  const currentServings =
+    entry?.meal.id != null
+      ? servingsOverride[entry.meal.id] ?? baseServings
+      : baseServings;
+
+  function adjustServings(delta: number) {
+    if (!entry?.meal.id) return;
+    setServingsOverride((prev) => ({
+      ...prev,
+      [entry.meal.id!]: Math.max(1, currentServings + delta),
+    }));
+  }
 
   let subtitle: string;
   if (isToday) {
@@ -187,6 +204,31 @@ export default function TodayView({
               />
             )}
 
+            {/* Servings — adjustable per-recipe, independent of your default preference */}
+            <div className="mb-4 flex items-center gap-3">
+              <span className="text-sm font-semibold text-[#1C1C1E]/50">Servings</span>
+              <button
+                onClick={() => adjustServings(-1)}
+                className="flex h-8 w-8 items-center justify-center rounded-full bg-[#F7F6F2] text-base font-bold text-[#1C1C1E]/70 hover:bg-[#EDECE7]"
+              >
+                −
+              </button>
+              <span className="w-6 text-center text-base font-bold text-[#1C1C1E]">
+                {currentServings}
+              </span>
+              <button
+                onClick={() => adjustServings(1)}
+                className="flex h-8 w-8 items-center justify-center rounded-full bg-[#F7F6F2] text-base font-bold text-[#1C1C1E]/70 hover:bg-[#EDECE7]"
+              >
+                +
+              </button>
+              {currentServings !== baseServings && (
+                <span className="text-xs text-[#1C1C1E]/40">
+                  (normally {baseServings})
+                </span>
+              )}
+            </div>
+
             <div
               className="grid gap-6 rounded-2xl p-5 sm:grid-cols-2"
               style={{ backgroundColor: accent.soft }}
@@ -196,9 +238,9 @@ export default function TodayView({
                   Ingredients
                 </h3>
                 <ul className="space-y-1.5 text-sm text-[#1C1C1E]/80">
-                  {entry.meal.ingredients.map((ing, i) => (
+                  {scaleIngredients(entry.meal.ingredients, baseServings, currentServings).map((ing, i) => (
                     <li key={i}>
-                      {ing.quantity} {ing.unit} {ing.name}
+                      {Math.round(ing.quantity * 100) / 100} {ing.unit} {ing.name}
                     </li>
                   ))}
                 </ul>
@@ -213,7 +255,7 @@ export default function TodayView({
                       <span className="font-bold" style={{ color: accent.bg }}>{i + 1}</span>
                       <span>
                         <span className="font-semibold text-[#1C1C1E]">{step.title}.</span>{" "}
-                        {step.content}
+                        {renderStepContent(step.content, entry.meal.ingredients, baseServings, currentServings)}
                       </span>
                     </li>
                   ))}
@@ -263,8 +305,11 @@ export default function TodayView({
 
       {cookingMode && entry && (
         <CookingMode
-          steps={normalizeSteps(entry.meal.instructions)}
-          mealName={entry.meal.name}
+          steps={normalizeSteps(entry.meal.instructions).map((s) => ({
+            ...s,
+            content: renderStepContent(s.content, entry.meal.ingredients, baseServings, currentServings),
+          }))}
+          mealName={`${entry.meal.name} (${currentServings} servings)`}
           onClose={() => setCookingMode(false)}
         />
       )}

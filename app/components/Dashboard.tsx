@@ -3,9 +3,10 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { normalizeSteps } from "../lib/steps";
+import { normalizeSteps, renderStepContent } from "../lib/steps";
 
 interface Ingredient {
+  id?: string;
   name: string;
   quantity: number;
   unit: string;
@@ -19,6 +20,7 @@ interface Meal {
   instructions: any[]; // legacy string[] or new {title,content,timer_seconds}[] — normalizeSteps() handles both
   tags: string[];
   image_url?: string | null;
+  base_servings?: number;
 }
 
 interface DayEntry {
@@ -379,7 +381,12 @@ export default function Dashboard({ initialWeek }: { initialWeek: DayEntry[] | n
                               </span>
                               <span>
                                 <span className="font-semibold text-[#1C1C1E]">{step.title}.</span>{" "}
-                                {step.content}
+                                {renderStepContent(
+                                  step.content,
+                                  meal.ingredients,
+                                  meal.base_servings ?? 2,
+                                  meal.base_servings ?? 2
+                                )}
                               </span>
                             </li>
                           ))}
