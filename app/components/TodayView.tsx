@@ -1,7 +1,7 @@
 // app/components/TodayView.tsx
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { normalizeSteps, scaleIngredients, renderStepContent } from "../lib/steps";
 import CookingMode from "./CookingMode";
@@ -57,6 +57,19 @@ export default function TodayView({
   const [error, setError] = useState<string | null>(null);
   const [cookingMode, setCookingMode] = useState(false);
   const [servingsOverride, setServingsOverride] = useState<Record<string, number>>({});
+  const [inventoryNames, setInventoryNames] = useState<Set<string>>(new Set());
+
+  useEffect(() => {
+    fetch("/api/inventory")
+      .then((res) => res.json())
+      .then((data) => {
+        const names = (data.items ?? []).map((i: any) => i.item.toLowerCase().trim());
+        setInventoryNames(new Set(names));
+      })
+      .catch(() => {
+        // Non-critical — the "uses what you have" indicator just won't show, generation still works
+      });
+  }, []);
 
   async function handleFeedback(mealId: string | undefined, status: "cooked" | "skipped", rating: number | null) {
     if (!mealId) return;
@@ -179,6 +192,21 @@ export default function TodayView({
               </div>
             </div>
 
+            {(() => {
+              const matchCount = entry.meal.ingredients.filter((ing) =>
+                inventoryNames.has(ing.name.toLowerCase().trim())
+              ).length;
+              if (matchCount === 0) return null;
+              return (
+                <div
+                  className="mb-4 inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-bold"
+                  style={{ backgroundColor: "#EAF5F0", color: "#5FA88A" }}
+                >
+                  🧺 Uses {matchCount} thing{matchCount === 1 ? "" : "s"} you already have
+                </div>
+              );
+            })()}
+
             {entry.meal.image_url && (
               // eslint-disable-next-line @next/next/no-img-element
               <img
@@ -222,11 +250,21 @@ export default function TodayView({
                   Ingredients
                 </h3>
                 <ul className="space-y-1.5 text-sm text-[#1C1C1E]/80">
-                  {scaleIngredients(entry.meal.ingredients, baseServings, currentServings).map((ing, i) => (
-                    <li key={i}>
-                      {Math.round(ing.quantity * 100) / 100} {ing.unit} {ing.name}
-                    </li>
-                  ))}
+                  {scaleIngredients(entry.meal.ingredients, baseServings, currentServings).map((ing, i) => {
+                    const haveIt = inventoryNames.has(ing.name.toLowerCase().trim());
+                    return (
+                      <li key={i} className="flex items-center gap-1.5">
+                        <span>
+                          {Math.round(ing.quantity * 100) / 100} {ing.unit} {ing.name}
+                        </span>
+                        {haveIt && (
+                          <span className="text-xs font-bold text-[#5FA88A]" title="Already in your inventory">
+                            ✓
+                          </span>
+                        )}
+                      </li>
+                    );
+                  })}
                 </ul>
               </div>
               <div>
