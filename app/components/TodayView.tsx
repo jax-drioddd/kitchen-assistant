@@ -106,10 +106,10 @@ export default function TodayView({
 
   if (!week || week.length === 0) {
     return (
-      <main className="flex min-h-screen items-center justify-center bg-white px-5">
+      <main className="flex min-h-screen items-center justify-center bg-white dark:bg-[#121212] px-5">
         <div className="max-w-sm text-center">
-          <h1 className="mb-2 text-2xl font-bold text-[#1A1A1A]">No plan yet</h1>
-          <p className="mb-6 text-sm text-[#1A1A1A]/50">
+          <h1 className="mb-2 text-2xl font-bold text-[#1A1A1A] dark:text-[#F0F0F0]">No plan yet</h1>
+          <p className="mb-6 text-sm text-[#1A1A1A]/50 dark:text-[#F0F0F0]/50">
             Nothing planned for this week. Head to the planner to generate one.
           </p>
           <Link
@@ -156,13 +156,13 @@ export default function TodayView({
     : 0;
 
   return (
-    <main className="min-h-screen bg-white px-5 py-8 md:px-10 md:py-12">
+    <main className="min-h-screen bg-white dark:bg-[#121212] px-5 py-8 md:px-10 md:py-12">
       <div className="mx-auto max-w-2xl">
         <header className="mb-6">
-          <h1 className="text-2xl font-bold tracking-tight text-[#1A1A1A]">
+          <h1 className="text-2xl font-bold tracking-tight text-[#1A1A1A] dark:text-[#F0F0F0]">
             {isToday ? "Tonight" : selectedDay}
           </h1>
-          <p className="mt-0.5 text-sm text-[#1A1A1A]/45">{subtitle}</p>
+          <p className="mt-0.5 text-sm text-[#1A1A1A]/45 dark:text-[#F0F0F0]/45">{subtitle}</p>
         </header>
 
         {/* Day picker — plain text rows, solid highlight only on the active day */}
@@ -173,12 +173,10 @@ export default function TodayView({
               <button
                 key={day}
                 onClick={() => setSelectedDay(day)}
-                className="shrink-0 rounded-full px-3.5 py-1.5 text-sm font-semibold transition-colors"
-                style={
-                  active
-                    ? { backgroundColor: ACCENT, color: "white" }
-                    : { color: "#1A1A1A70" }
-                }
+                className={`shrink-0 rounded-full px-3.5 py-1.5 text-sm font-semibold transition-colors ${
+                  !active ? "text-[#1A1A1A]/70 dark:text-[#F0F0F0]/70" : ""
+                }`}
+                style={active ? { backgroundColor: ACCENT, color: "white" } : undefined}
               >
                 {day.slice(0, 3)}
                 {day === todayName && !active && " ·"}
@@ -193,12 +191,12 @@ export default function TodayView({
 
         {entry && (
           <div>
-            <h2 className="mb-2 text-3xl font-bold leading-tight text-[#1A1A1A]">
+            <h2 className="mb-2 text-3xl font-bold leading-tight text-[#1A1A1A] dark:text-[#F0F0F0]">
               {entry.meal.name}
             </h2>
 
             {/* Metadata row — icons + small caps, gray, no color */}
-            <div className="mb-4 flex flex-wrap items-center gap-4 text-xs font-semibold uppercase tracking-wide text-[#1A1A1A]/40">
+            <div className="mb-4 flex flex-wrap items-center gap-4 text-xs font-semibold uppercase tracking-wide text-[#1A1A1A]/40 dark:text-[#F0F0F0]/40">
               <span>👥 {currentServings} servings</span>
               {entry.meal.tags?.[0] && <span>🏷 {entry.meal.tags[0]}</span>}
               {inventoryMatchCount > 0 && (
@@ -218,7 +216,7 @@ export default function TodayView({
             )}
 
             {/* Action row — text + icon, not filled pill buttons */}
-            <div className="mb-8 flex items-center gap-6 border-b border-t border-[#1A1A1A]/8 py-3">
+            <div className="mb-8 flex items-center gap-6 border-b border-t border-[#1A1A1A]/8 dark:border-[#F0F0F0]/8 py-3">
               <button
                 onClick={() => setCookingMode(true)}
                 className="flex items-center gap-1.5 text-sm font-bold"
@@ -226,12 +224,12 @@ export default function TodayView({
               >
                 ▶ Cook
               </button>
-              <div className="flex items-center gap-1.5 text-sm font-semibold text-[#1A1A1A]/50">
-                <button onClick={() => adjustServings(-1)} className="px-1 hover:text-[#1A1A1A]">
+              <div className="flex items-center gap-1.5 text-sm font-semibold text-[#1A1A1A]/50 dark:text-[#F0F0F0]/50">
+                <button onClick={() => adjustServings(-1)} className="px-1 hover:text-[#1A1A1A] dark:hover:text-[#F0F0F0]">
                   −
                 </button>
-                <span className="text-[#1A1A1A]">{currentServings} servings</span>
-                <button onClick={() => adjustServings(1)} className="px-1 hover:text-[#1A1A1A]">
+                <span className="text-[#1A1A1A] dark:text-[#F0F0F0]">{currentServings} servings</span>
+                <button onClick={() => adjustServings(1)} className="px-1 hover:text-[#1A1A1A] dark:hover:text-[#F0F0F0]">
                   +
                 </button>
               </div>
@@ -239,15 +237,15 @@ export default function TodayView({
 
             <div className="grid gap-10 sm:grid-cols-[1fr_1.4fr]">
               <div>
-                <h3 className="mb-3 text-xs font-bold uppercase tracking-wide text-[#1A1A1A]/40">
+                <h3 className="mb-3 text-xs font-bold uppercase tracking-wide text-[#1A1A1A]/40 dark:text-[#F0F0F0]/40">
                   Ingredients
                 </h3>
-                <ul className="space-y-2 text-sm text-[#1A1A1A]/85">
+                <ul className="space-y-2 text-sm text-[#1A1A1A]/85 dark:text-[#F0F0F0]/85">
                   {scaledIngredients.map((ing, i) => {
                     const haveIt = inventoryNames.has(ing.name.toLowerCase().trim());
                     return (
                       <li key={i}>
-                        <span className="font-bold text-[#1A1A1A]">
+                        <span className="font-bold text-[#1A1A1A] dark:text-[#F0F0F0]">
                           {Math.round(ing.quantity * 100) / 100} {ing.unit}
                         </span>{" "}
                         {ing.name}
@@ -263,15 +261,15 @@ export default function TodayView({
               </div>
 
               <div>
-                <h3 className="mb-3 text-xs font-bold uppercase tracking-wide text-[#1A1A1A]/40">
+                <h3 className="mb-3 text-xs font-bold uppercase tracking-wide text-[#1A1A1A]/40 dark:text-[#F0F0F0]/40">
                   Instructions
                 </h3>
-                <ol className="space-y-3 text-sm leading-relaxed text-[#1A1A1A]/85">
+                <ol className="space-y-3 text-sm leading-relaxed text-[#1A1A1A]/85 dark:text-[#F0F0F0]/85">
                   {steps.map((step, i) => (
                     <li key={i} className="flex gap-3">
-                      <span className="font-bold text-[#1A1A1A]/30">{i + 1}</span>
+                      <span className="font-bold text-[#1A1A1A]/30 dark:text-[#F0F0F0]/30">{i + 1}</span>
                       <span>
-                        <span className="font-bold text-[#1A1A1A]">{step.title}.</span>{" "}
+                        <span className="font-bold text-[#1A1A1A] dark:text-[#F0F0F0]">{step.title}.</span>{" "}
                         {renderStepContent(step.content, entry.meal.ingredients, baseServings, currentServings)}
                       </span>
                     </li>
@@ -280,36 +278,36 @@ export default function TodayView({
               </div>
             </div>
 
-            <div className="mt-8 border-t border-[#1A1A1A]/8 pt-6">
+            <div className="mt-8 border-t border-[#1A1A1A]/8 dark:border-[#F0F0F0]/8 pt-6">
               {entry.meal.id && ratedMeals[entry.meal.id] ? (
-                <p className="text-sm font-semibold text-[#1A1A1A]/40">
+                <p className="text-sm font-semibold text-[#1A1A1A]/40 dark:text-[#F0F0F0]/40">
                   {ratedMeals[entry.meal.id] === "skipped"
                     ? "Marked as skipped — won't suggest this again soon."
                     : "Thanks — noted for next time."}
                 </p>
               ) : entry.meal.id && cookedPendingRating[entry.meal.id] ? (
                 <div>
-                  <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-[#1A1A1A]/40">
+                  <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-[#1A1A1A]/40 dark:text-[#F0F0F0]/40">
                     How was it?
                   </p>
-                  <div className="flex flex-wrap gap-4 text-sm font-semibold text-[#1A1A1A]/50">
-                    <button onClick={() => handleRate(entry.meal.id, 5)} className="hover:text-[#1A1A1A]">
+                  <div className="flex flex-wrap gap-4 text-sm font-semibold text-[#1A1A1A]/50 dark:text-[#F0F0F0]/50">
+                    <button onClick={() => handleRate(entry.meal.id, 5)} className="hover:text-[#1A1A1A] dark:hover:text-[#F0F0F0]">
                       👍 Loved it
                     </button>
-                    <button onClick={() => handleRate(entry.meal.id, 1)} className="hover:text-[#1A1A1A]">
+                    <button onClick={() => handleRate(entry.meal.id, 1)} className="hover:text-[#1A1A1A] dark:hover:text-[#F0F0F0]">
                       👎 Not for me
                     </button>
-                    <button onClick={() => handleRate(entry.meal.id, null)} className="text-[#1A1A1A]/30 hover:text-[#1A1A1A]/60">
+                    <button onClick={() => handleRate(entry.meal.id, null)} className="text-[#1A1A1A]/30 dark:text-[#F0F0F0]/30 hover:text-[#1A1A1A]/60 dark:hover:text-[#F0F0F0]/60">
                       Skip rating
                     </button>
                   </div>
                 </div>
               ) : (
-                <div className="flex flex-wrap gap-4 text-sm font-semibold text-[#1A1A1A]/50">
-                  <button onClick={() => handleMarkStatus(entry.meal.id, "cooked")} className="hover:text-[#1A1A1A]">
+                <div className="flex flex-wrap gap-4 text-sm font-semibold text-[#1A1A1A]/50 dark:text-[#F0F0F0]/50">
+                  <button onClick={() => handleMarkStatus(entry.meal.id, "cooked")} className="hover:text-[#1A1A1A] dark:hover:text-[#F0F0F0]">
                     ✅ Finished cooking
                   </button>
-                  <button onClick={() => handleMarkStatus(entry.meal.id, "skipped")} className="hover:text-[#1A1A1A]">
+                  <button onClick={() => handleMarkStatus(entry.meal.id, "skipped")} className="hover:text-[#1A1A1A] dark:hover:text-[#F0F0F0]">
                     ⏭️ Skipped it
                   </button>
                 </div>

@@ -66,15 +66,15 @@ export default async function HistoryPage() {
   const sortedWeeks = Array.from(weeks.entries()).sort((a, b) => (a[0] < b[0] ? 1 : -1));
 
   return (
-    <main className="min-h-screen bg-white px-5 py-8 md:px-10 md:py-12">
+    <main className="min-h-screen bg-white dark:bg-[#121212] px-5 py-8 md:px-10 md:py-12">
       <div className="mx-auto max-w-2xl">
         <header className="mb-8">
-          <h1 className="text-2xl font-bold tracking-tight text-[#1A1A1A]">History</h1>
-          <p className="mt-0.5 text-sm text-[#1A1A1A]/45">Everything you've cooked, skipped, and rated.</p>
+          <h1 className="text-2xl font-bold tracking-tight text-[#1A1A1A] dark:text-[#F0F0F0]">History</h1>
+          <p className="mt-0.5 text-sm text-[#1A1A1A]/45 dark:text-[#F0F0F0]/45">Everything you've cooked, skipped, and rated.</p>
         </header>
 
         {sortedWeeks.length === 0 && (
-          <p className="text-sm text-[#1A1A1A]/45">
+          <p className="text-sm text-[#1A1A1A]/45 dark:text-[#F0F0F0]/45">
             Nothing logged yet — rate or skip a meal and it'll show up here.
           </p>
         )}
@@ -82,7 +82,7 @@ export default async function HistoryPage() {
         <div className="space-y-8">
           {sortedWeeks.map(([weekStart, weekEntries]) => (
             <div key={weekStart}>
-              <h2 className="mb-3 text-xs font-bold uppercase tracking-wide text-[#1A1A1A]/40">
+              <h2 className="mb-3 text-xs font-bold uppercase tracking-wide text-[#1A1A1A]/40 dark:text-[#F0F0F0]/40">
                 {formatWeekLabel(weekStart)}
               </h2>
               <div className="divide-y divide-[#1A1A1A]/8">
@@ -96,15 +96,15 @@ export default async function HistoryPage() {
                           // eslint-disable-next-line @next/next/no-img-element
                           <img src={meal.image_url} alt={meal.name} className="h-11 w-11 shrink-0 rounded-lg object-cover" />
                         ) : (
-                          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-[#1A1A1A]/5 text-lg">
+                          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-[#1A1A1A]/5 dark:bg-[#F0F0F0]/8 text-lg">
                             🍽️
                           </div>
                         )}
                         <div className="min-w-0 flex-1">
-                          <p className="text-xs font-semibold uppercase tracking-wide text-[#1A1A1A]/40">
+                          <p className="text-xs font-semibold uppercase tracking-wide text-[#1A1A1A]/40 dark:text-[#F0F0F0]/40">
                             {dayName(entry.date)}
                           </p>
-                          <p className="truncate text-sm font-bold text-[#1A1A1A]">{meal?.name ?? "Unknown meal"}</p>
+                          <p className="truncate text-sm font-bold text-[#1A1A1A] dark:text-[#F0F0F0]">{meal?.name ?? "Unknown meal"}</p>
                         </div>
                         <div className="shrink-0 text-base">
                           {entry.status === "skipped"

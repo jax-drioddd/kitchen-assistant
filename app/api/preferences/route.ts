@@ -22,6 +22,7 @@ export async function GET() {
       cuisine_leanings: [],
       pantry_staples: [],
       default_servings: 2,
+      dark_mode: false,
     });
   }
 
@@ -38,6 +39,7 @@ export async function POST(req: NextRequest) {
       cuisine_leanings,
       pantry_staples,
       default_servings,
+      dark_mode,
     } = body;
 
     const { data: existing } = await supabase.from("preferences").select("id").single();
@@ -49,6 +51,7 @@ export async function POST(req: NextRequest) {
       cuisine_leanings,
       pantry_staples,
       default_servings,
+      dark_mode,
     };
 
     if (existing) {

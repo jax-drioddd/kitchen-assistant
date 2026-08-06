@@ -166,13 +166,13 @@ export default function Dashboard({ initialWeek }: { initialWeek: DayEntry[] | n
   }
 
   return (
-    <main className="min-h-screen bg-white px-5 py-8 md:px-10 md:py-12">
+    <main className="min-h-screen bg-white dark:bg-[#121212] px-5 py-8 md:px-10 md:py-12">
       <div className="mx-auto max-w-2xl">
         <header className="mb-8">
-          <h1 className="text-2xl font-bold tracking-tight text-[#1A1A1A]">
+          <h1 className="text-2xl font-bold tracking-tight text-[#1A1A1A] dark:text-[#F0F0F0]">
             Create week plan
           </h1>
-          <p className="mt-0.5 text-sm text-[#1A1A1A]/45">
+          <p className="mt-0.5 text-sm text-[#1A1A1A]/45 dark:text-[#F0F0F0]/45">
             {week ? `${week.length} meal${week.length === 1 ? "" : "s"} planned` : "Generate meals, adjust with chat, and build your grocery list."}
           </p>
         </header>
@@ -182,29 +182,27 @@ export default function Dashboard({ initialWeek }: { initialWeek: DayEntry[] | n
         )}
 
         {showOnboarding && (
-          <div className="mb-8 border-b border-[#1A1A1A]/8 pb-8">
-            <h2 className="mb-3 text-sm font-bold text-[#1A1A1A]">Which days do you want planned?</h2>
+          <div className="mb-8 border-b border-[#1A1A1A]/8 dark:border-[#F0F0F0]/8 pb-8">
+            <h2 className="mb-3 text-sm font-bold text-[#1A1A1A] dark:text-[#F0F0F0]">Which days do you want planned?</h2>
             <div className="mb-5 flex flex-wrap gap-1">
               {ALL_DAYS.map((day) => (
                 <button
                   key={day}
                   onClick={() => toggleDay(day)}
-                  className="rounded-full px-3.5 py-1.5 text-sm font-semibold transition-colors"
-                  style={
-                    selectedDays.includes(day)
-                      ? { backgroundColor: ACCENT, color: "white" }
-                      : { color: "#1A1A1A70" }
-                  }
+                  className={`rounded-full px-3.5 py-1.5 text-sm font-semibold transition-colors ${
+                    !selectedDays.includes(day) ? "text-[#1A1A1A]/70 dark:text-[#F0F0F0]/70" : ""
+                  }`}
+                  style={selectedDays.includes(day) ? { backgroundColor: ACCENT, color: "white" } : undefined}
                 >
                   {day}
                 </button>
               ))}
             </div>
 
-            <label className="mb-1 block text-sm font-bold text-[#1A1A1A]">
-              Anything specific for this week? <span className="font-normal text-[#1A1A1A]/40">(optional)</span>
+            <label className="mb-1 block text-sm font-bold text-[#1A1A1A] dark:text-[#F0F0F0]">
+              Anything specific for this week? <span className="font-normal text-[#1A1A1A]/40 dark:text-[#F0F0F0]/40">(optional)</span>
             </label>
-            <p className="mb-2 text-xs text-[#1A1A1A]/40">
+            <p className="mb-2 text-xs text-[#1A1A1A]/40 dark:text-[#F0F0F0]/40">
               e.g. "chicken Monday, something Indian Wednesday, keep it light this week"
             </p>
             <textarea
@@ -212,7 +210,7 @@ export default function Dashboard({ initialWeek }: { initialWeek: DayEntry[] | n
               onChange={(e) => setWeekInstructions(e.target.value)}
               placeholder="Type any day-specific requests or general themes…"
               rows={2}
-              className="mb-5 w-full resize-none rounded-2xl border border-[#1A1A1A]/12 px-4 py-2.5 text-sm text-[#1A1A1A] outline-none focus:border-[#1A1A1A]/30"
+              className="mb-5 w-full resize-none rounded-2xl border border-[#1A1A1A]/12 dark:border-[#F0F0F0]/12 px-4 py-2.5 text-sm text-[#1A1A1A] dark:text-[#F0F0F0] outline-none focus:border-[#1A1A1A]/30 dark:focus:border-[#F0F0F0]/30"
             />
 
             <button
@@ -232,7 +230,7 @@ export default function Dashboard({ initialWeek }: { initialWeek: DayEntry[] | n
           <div className="mb-6">
             <button
               onClick={() => setShowOnboarding(true)}
-              className="text-sm font-semibold text-[#1A1A1A]/50 hover:text-[#1A1A1A]"
+              className="text-sm font-semibold text-[#1A1A1A]/50 dark:text-[#F0F0F0]/50 hover:text-[#1A1A1A] dark:hover:text-[#F0F0F0]"
             >
               ↺ Regenerate week
             </button>
@@ -262,9 +260,9 @@ export default function Dashboard({ initialWeek }: { initialWeek: DayEntry[] | n
                         </div>
                       )}
                       <div>
-                        <span className="text-xs font-bold uppercase tracking-wide text-[#1A1A1A]/40">{day}</span>
-                        <h2 className="text-lg font-bold leading-tight text-[#1A1A1A]">{meal.name}</h2>
-                        <div className="mt-0.5 flex flex-wrap items-center gap-3 text-xs font-semibold uppercase tracking-wide text-[#1A1A1A]/40">
+                        <span className="text-xs font-bold uppercase tracking-wide text-[#1A1A1A]/40 dark:text-[#F0F0F0]/40">{day}</span>
+                        <h2 className="text-lg font-bold leading-tight text-[#1A1A1A] dark:text-[#F0F0F0]">{meal.name}</h2>
+                        <div className="mt-0.5 flex flex-wrap items-center gap-3 text-xs font-semibold uppercase tracking-wide text-[#1A1A1A]/40 dark:text-[#F0F0F0]/40">
                           {meal.tags?.[0] && <span>🏷 {meal.tags[0]}</span>}
                           {matchCount > 0 && (
                             <span style={{ color: ACCENT }}>
@@ -274,7 +272,7 @@ export default function Dashboard({ initialWeek }: { initialWeek: DayEntry[] | n
                         </div>
                       </div>
                     </div>
-                    <span className="text-[#1A1A1A]/25 transition-transform group-open:rotate-180">▾</span>
+                    <span className="text-[#1A1A1A]/25 dark:text-[#F0F0F0]/25 transition-transform group-open:rotate-180">▾</span>
                   </summary>
 
                   <div className="pt-4">
@@ -284,15 +282,15 @@ export default function Dashboard({ initialWeek }: { initialWeek: DayEntry[] | n
                     )}
                     <div className="grid gap-6 sm:grid-cols-2">
                       <div>
-                        <h3 className="mb-2 text-xs font-bold uppercase tracking-wide text-[#1A1A1A]/40">
+                        <h3 className="mb-2 text-xs font-bold uppercase tracking-wide text-[#1A1A1A]/40 dark:text-[#F0F0F0]/40">
                           Ingredients
                         </h3>
-                        <ul className="space-y-1.5 text-sm text-[#1A1A1A]/80">
+                        <ul className="space-y-1.5 text-sm text-[#1A1A1A]/80 dark:text-[#F0F0F0]/80">
                           {meal.ingredients.map((ing, idx) => {
                             const haveIt = inventoryNames.has(ing.name.toLowerCase().trim());
                             return (
                               <li key={idx}>
-                                <span className="font-bold text-[#1A1A1A]">{ing.quantity} {ing.unit}</span> {ing.name}
+                                <span className="font-bold text-[#1A1A1A] dark:text-[#F0F0F0]">{ing.quantity} {ing.unit}</span> {ing.name}
                                 {haveIt && (
                                   <span className="ml-1.5 text-xs font-bold" style={{ color: ACCENT }}>✓</span>
                                 )}
@@ -302,15 +300,15 @@ export default function Dashboard({ initialWeek }: { initialWeek: DayEntry[] | n
                         </ul>
                       </div>
                       <div>
-                        <h3 className="mb-2 text-xs font-bold uppercase tracking-wide text-[#1A1A1A]/40">
+                        <h3 className="mb-2 text-xs font-bold uppercase tracking-wide text-[#1A1A1A]/40 dark:text-[#F0F0F0]/40">
                           Instructions
                         </h3>
-                        <ol className="space-y-2 text-sm leading-relaxed text-[#1A1A1A]/80">
+                        <ol className="space-y-2 text-sm leading-relaxed text-[#1A1A1A]/80 dark:text-[#F0F0F0]/80">
                           {normalizeSteps(meal.instructions).map((step, idx) => (
                             <li key={idx} className="flex gap-2.5">
-                              <span className="font-bold text-[#1A1A1A]/30">{idx + 1}</span>
+                              <span className="font-bold text-[#1A1A1A]/30 dark:text-[#F0F0F0]/30">{idx + 1}</span>
                               <span>
-                                <span className="font-bold text-[#1A1A1A]">{step.title}.</span>{" "}
+                                <span className="font-bold text-[#1A1A1A] dark:text-[#F0F0F0]">{step.title}.</span>{" "}
                                 {renderStepContent(step.content, meal.ingredients, meal.base_servings ?? 2, meal.base_servings ?? 2)}
                               </span>
                             </li>
@@ -326,24 +324,24 @@ export default function Dashboard({ initialWeek }: { initialWeek: DayEntry[] | n
         )}
 
         {week && (
-          <div className="mb-8 border-t border-[#1A1A1A]/8 pt-6">
-            <h2 className="mb-1 text-sm font-bold text-[#1A1A1A]">Adjust your week</h2>
-            <p className="mb-3 text-xs text-[#1A1A1A]/40">e.g. "swap wednesday, don't feel like chicken"</p>
+          <div className="mb-8 border-t border-[#1A1A1A]/8 dark:border-[#F0F0F0]/8 pt-6">
+            <h2 className="mb-1 text-sm font-bold text-[#1A1A1A] dark:text-[#F0F0F0]">Adjust your week</h2>
+            <p className="mb-3 text-xs text-[#1A1A1A]/40 dark:text-[#F0F0F0]/40">e.g. "swap wednesday, don't feel like chicken"</p>
             <div className="mb-3 max-h-56 space-y-2 overflow-y-auto">
               {chatMessages.length === 0 && (
-                <p className="text-sm text-[#1A1A1A]/30">No messages yet — try one above.</p>
+                <p className="text-sm text-[#1A1A1A]/30 dark:text-[#F0F0F0]/30">No messages yet — try one above.</p>
               )}
               {chatMessages.map((m, i) => (
                 <div
                   key={i}
                   className={`max-w-[85%] rounded-2xl px-4 py-2 text-sm ${
-                    m.role === "user" ? "ml-auto bg-[#1A1A1A] text-white" : "bg-[#1A1A1A]/5 text-[#1A1A1A]/85"
+                    m.role === "user" ? "ml-auto bg-[#1A1A1A] dark:bg-[#2E2E2E] text-white" : "bg-[#1A1A1A]/5 dark:bg-[#F0F0F0]/8 text-[#1A1A1A]/85 dark:text-[#F0F0F0]/85"
                   }`}
                 >
                   {m.text}
                 </div>
               ))}
-              {chatLoading && <div className="w-fit rounded-2xl bg-[#1A1A1A]/5 px-4 py-2 text-sm text-[#1A1A1A]/40">Thinking…</div>}
+              {chatLoading && <div className="w-fit rounded-2xl bg-[#1A1A1A]/5 dark:bg-[#F0F0F0]/8 px-4 py-2 text-sm text-[#1A1A1A]/40 dark:text-[#F0F0F0]/40">Thinking…</div>}
             </div>
             <div className="flex gap-2">
               <input
@@ -351,7 +349,7 @@ export default function Dashboard({ initialWeek }: { initialWeek: DayEntry[] | n
                 onChange={(e) => setChatInput(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && handleChatSend()}
                 placeholder="Type a swap request…"
-                className="flex-1 rounded-full border border-[#1A1A1A]/12 px-4 py-2 text-sm text-[#1A1A1A] outline-none focus:border-[#1A1A1A]/30"
+                className="flex-1 rounded-full border border-[#1A1A1A]/12 dark:border-[#F0F0F0]/12 px-4 py-2 text-sm text-[#1A1A1A] dark:text-[#F0F0F0] outline-none focus:border-[#1A1A1A]/30 dark:focus:border-[#F0F0F0]/30"
               />
               <button
                 onClick={handleChatSend}
@@ -366,7 +364,7 @@ export default function Dashboard({ initialWeek }: { initialWeek: DayEntry[] | n
         )}
 
         {week && !groceryItems && (
-          <div className="border-t border-[#1A1A1A]/8 pt-6 text-center">
+          <div className="border-t border-[#1A1A1A]/8 dark:border-[#F0F0F0]/8 pt-6 text-center">
             <button
               onClick={handleGetGroceryList}
               disabled={groceryLoading}
@@ -379,17 +377,17 @@ export default function Dashboard({ initialWeek }: { initialWeek: DayEntry[] | n
         )}
 
         {groceryItems && (
-          <div className="border-t border-[#1A1A1A]/8 pt-6">
+          <div className="border-t border-[#1A1A1A]/8 dark:border-[#F0F0F0]/8 pt-6">
             <div className="mb-3 flex items-center justify-between">
-              <h2 className="text-sm font-bold text-[#1A1A1A]">This week's list</h2>
-              <span className="text-xs font-semibold text-[#1A1A1A]/40">
+              <h2 className="text-sm font-bold text-[#1A1A1A] dark:text-[#F0F0F0]">This week's list</h2>
+              <span className="text-xs font-semibold text-[#1A1A1A]/40 dark:text-[#F0F0F0]/40">
                 {groceryItems.length} item{groceryItems.length === 1 ? "" : "s"}
               </span>
             </div>
-            <ul className="mb-5 columns-1 gap-x-8 text-sm text-[#1A1A1A]/80 sm:columns-2">
+            <ul className="mb-5 columns-1 gap-x-8 text-sm text-[#1A1A1A]/80 dark:text-[#F0F0F0]/80 sm:columns-2">
               {groceryItems.map((ing, i) => (
                 <li key={i} className="mb-1.5 break-inside-avoid">
-                  <span className="font-bold text-[#1A1A1A]">{ing.quantity} {ing.unit}</span> {ing.name}
+                  <span className="font-bold text-[#1A1A1A] dark:text-[#F0F0F0]">{ing.quantity} {ing.unit}</span> {ing.name}
                 </li>
               ))}
             </ul>
@@ -399,13 +397,13 @@ export default function Dashboard({ initialWeek }: { initialWeek: DayEntry[] | n
                   Order on Instacart →
                 </a>
               )}
-              <button onClick={() => window.print()} className="text-[#1A1A1A]/50 hover:text-[#1A1A1A]">
+              <button onClick={() => window.print()} className="text-[#1A1A1A]/50 dark:text-[#F0F0F0]/50 hover:text-[#1A1A1A] dark:hover:text-[#F0F0F0]">
                 Print list
               </button>
-              <button onClick={handleExport} className="text-[#1A1A1A]/50 hover:text-[#1A1A1A]">
+              <button onClick={handleExport} className="text-[#1A1A1A]/50 dark:text-[#F0F0F0]/50 hover:text-[#1A1A1A] dark:hover:text-[#F0F0F0]">
                 {copied ? "Copied ✓" : "Export"}
               </button>
-              <button onClick={handleGetGroceryList} disabled={groceryLoading} className="text-[#1A1A1A]/50 hover:text-[#1A1A1A] disabled:opacity-50">
+              <button onClick={handleGetGroceryList} disabled={groceryLoading} className="text-[#1A1A1A]/50 dark:text-[#F0F0F0]/50 hover:text-[#1A1A1A] dark:hover:text-[#F0F0F0] disabled:opacity-50">
                 {groceryLoading ? "Refreshing…" : "Refresh list"}
               </button>
             </div>
