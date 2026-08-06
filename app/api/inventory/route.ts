@@ -15,6 +15,7 @@ export async function GET() {
   const { data, error } = await supabase
     .from("inventory")
     .select("*")
+    .gt("quantity", 0) // don't show items that have been fully used up
     .order("item", { ascending: true });
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
