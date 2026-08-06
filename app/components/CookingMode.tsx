@@ -170,7 +170,7 @@ export default function CookingMode({
             className="h-1.5 flex-1 rounded-full transition-colors"
             style={{
               backgroundColor:
-                completed.has(i) || panes.includes(i) ? "#F5A623" : "rgba(255,255,255,0.15)",
+                completed.has(i) || panes.includes(i) ? "#E8674A" : "rgba(255,255,255,0.15)",
             }}
           />
         ))}
@@ -214,19 +214,19 @@ export default function CookingMode({
                   <div className="mb-6 flex flex-col items-center">
                     <div
                       className={`mb-3 font-extrabold tabular-nums ${split ? "text-4xl md:text-5xl" : "text-7xl md:text-8xl"} ${
-                        timer.finished ? "text-[#F5A623]" : "text-white"
+                        timer.finished ? "text-[#E8674A]" : "text-white"
                       }`}
                     >
                       {formatTime(timer.remaining)}
                     </div>
                     {timer.finished && (
-                      <p className="mb-2 text-sm font-bold text-[#F5A623]">Time's up! ⏰</p>
+                      <p className="mb-2 text-sm font-bold text-[#E8674A]">Time's up! ⏰</p>
                     )}
                     <div className="flex gap-2">
                       <button
                         onClick={() => (timer.running ? pause(stepIndex) : startOrResume(stepIndex))}
                         disabled={timer.remaining === 0}
-                        className="rounded-full bg-[#F5A623] px-5 py-2.5 text-sm font-bold text-[#1C1C1E] shadow-md transition-all hover:scale-[1.02] disabled:opacity-40"
+                        className="rounded-full bg-[#E8674A] px-5 py-2.5 text-sm font-bold text-[#1C1C1E] shadow-md transition-all hover:scale-[1.02] disabled:opacity-40"
                       >
                         {timer.running ? "Pause" : timer.remaining === step.timer_seconds ? "Start" : "Resume"}
                       </button>

@@ -18,26 +18,12 @@ const DAY_NAMES = [
   "Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday",
 ];
 
-const ACCENTS = [
-  { name: "coral", bg: "#FF6B5A", soft: "#FFEEEC" },
-  { name: "sunflower", bg: "#F5A623", soft: "#FFF6E5" },
-  { name: "sky", bg: "#4A9DE0", soft: "#EAF4FC" },
-  { name: "sage", bg: "#5FA88A", soft: "#EAF5F0" },
-  { name: "plum", bg: "#9B6BE5", soft: "#F3EDFC" },
-  { name: "rose", bg: "#F2739E", soft: "#FDECF2" },
-  { name: "teal", bg: "#3EB0A8", soft: "#E8F7F5" },
-];
-
 interface HistoryEntry {
   id: string;
   date: string;
   status: string;
   rating: number | null;
-  meals: {
-    name: string;
-    image_url: string | null;
-    tags: string[];
-  } | null;
+  meals: { name: string; image_url: string | null; tags: string[] } | null;
 }
 
 function getMonday(dateStr: string): string {
@@ -71,7 +57,6 @@ async function getHistory(): Promise<HistoryEntry[]> {
 export default async function HistoryPage() {
   const entries = await getHistory();
 
-  // Group entries by the Monday of their week
   const weeks = new Map<string, HistoryEntry[]>();
   for (const entry of entries) {
     const weekStart = getMonday(entry.date);
@@ -81,69 +66,47 @@ export default async function HistoryPage() {
   const sortedWeeks = Array.from(weeks.entries()).sort((a, b) => (a[0] < b[0] ? 1 : -1));
 
   return (
-    <main className="min-h-screen bg-[#F7F6F2] px-5 py-8 md:px-10 md:py-12">
+    <main className="min-h-screen bg-white px-5 py-8 md:px-10 md:py-12">
       <div className="mx-auto max-w-2xl">
-        <div className="mb-8">
-            <div>
-            <h1 className="text-3xl font-extrabold tracking-tight text-[#1C1C1E]">
-              History 📅
-            </h1>
-            <p className="mt-1 text-sm text-[#1C1C1E]/50">
-              Everything you've cooked, skipped, and rated.
-            </p>
-          </div>
-          </div>
+        <header className="mb-8">
+          <h1 className="text-2xl font-bold tracking-tight text-[#1A1A1A]">History</h1>
+          <p className="mt-0.5 text-sm text-[#1A1A1A]/45">Everything you've cooked, skipped, and rated.</p>
+        </header>
 
         {sortedWeeks.length === 0 && (
-          <div className="rounded-3xl bg-white p-8 text-center shadow-sm">
-            <p className="text-sm text-[#1C1C1E]/50">
-              Nothing logged yet — rate or skip a meal and it'll show up here.
-            </p>
-          </div>
+          <p className="text-sm text-[#1A1A1A]/45">
+            Nothing logged yet — rate or skip a meal and it'll show up here.
+          </p>
         )}
 
         <div className="space-y-8">
           {sortedWeeks.map(([weekStart, weekEntries]) => (
             <div key={weekStart}>
-              <h2 className="mb-3 text-sm font-bold uppercase tracking-wide text-[#1C1C1E]/40">
+              <h2 className="mb-3 text-xs font-bold uppercase tracking-wide text-[#1A1A1A]/40">
                 {formatWeekLabel(weekStart)}
               </h2>
-              <div className="space-y-2">
+              <div className="divide-y divide-[#1A1A1A]/8">
                 {weekEntries
                   .sort((a, b) => (a.date < b.date ? 1 : -1))
-                  .map((entry, i) => {
-                    const accent = ACCENTS[i % ACCENTS.length];
+                  .map((entry) => {
                     const meal = entry.meals;
                     return (
-                      <div
-                        key={entry.id}
-                        className="flex items-center gap-3 rounded-2xl bg-white p-3 shadow-sm"
-                        style={{ borderLeft: `4px solid ${accent.bg}` }}
-                      >
+                      <div key={entry.id} className="flex items-center gap-3 py-3">
                         {meal?.image_url ? (
                           // eslint-disable-next-line @next/next/no-img-element
-                          <img
-                            src={meal.image_url}
-                            alt={meal.name}
-                            className="h-12 w-12 shrink-0 rounded-xl object-cover"
-                          />
+                          <img src={meal.image_url} alt={meal.name} className="h-11 w-11 shrink-0 rounded-lg object-cover" />
                         ) : (
-                          <div
-                            className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl text-white"
-                            style={{ backgroundColor: accent.bg }}
-                          >
+                          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-[#1A1A1A]/5 text-lg">
                             🍽️
                           </div>
                         )}
                         <div className="min-w-0 flex-1">
-                          <p className="text-xs font-semibold uppercase tracking-wide text-[#1C1C1E]/40">
+                          <p className="text-xs font-semibold uppercase tracking-wide text-[#1A1A1A]/40">
                             {dayName(entry.date)}
                           </p>
-                          <p className="truncate text-sm font-bold text-[#1C1C1E]">
-                            {meal?.name ?? "Unknown meal"}
-                          </p>
+                          <p className="truncate text-sm font-bold text-[#1A1A1A]">{meal?.name ?? "Unknown meal"}</p>
                         </div>
-                        <div className="shrink-0 text-lg">
+                        <div className="shrink-0 text-base">
                           {entry.status === "skipped"
                             ? "⏭️"
                             : entry.rating !== null && entry.rating >= 4
