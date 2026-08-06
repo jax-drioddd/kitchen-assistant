@@ -126,33 +126,11 @@ export default function TodayView({
   return (
     <main className="min-h-screen bg-[#F7F6F2] px-5 py-8 md:px-10 md:py-12">
       <div className="mx-auto max-w-2xl">
-        <header className="mb-6 flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-extrabold tracking-tight text-[#1C1C1E]">
-              {isToday ? "Tonight" : selectedDay} 🍽️
-            </h1>
-            <p className="mt-1 text-sm text-[#1C1C1E]/50">{subtitle}</p>
-          </div>
-          <div className="flex items-center gap-2">
-            <Link
-              href="/inventory"
-              className="rounded-full bg-white px-4 py-2 text-sm font-semibold text-[#1C1C1E]/50 shadow-sm transition-all hover:text-[#1C1C1E]/70 hover:shadow-md"
-            >
-              🧺 Inventory
-            </Link>
-            <Link
-              href="/history"
-              className="rounded-full bg-white px-4 py-2 text-sm font-semibold text-[#1C1C1E]/50 shadow-sm transition-all hover:text-[#1C1C1E]/70 hover:shadow-md"
-            >
-              📅 History
-            </Link>
-            <Link
-              href="/plan"
-              className="rounded-full bg-white px-4 py-2 text-sm font-semibold text-[#1C1C1E]/50 shadow-sm transition-all hover:text-[#1C1C1E]/70 hover:shadow-md"
-            >
-              ↺ Restart week
-            </Link>
-          </div>
+        <header className="mb-6">
+          <h1 className="text-3xl font-extrabold tracking-tight text-[#1C1C1E]">
+            {isToday ? "Tonight" : selectedDay} 🍽️
+          </h1>
+          <p className="mt-1 text-sm text-[#1C1C1E]/50">{subtitle}</p>
         </header>
 
         {/* Day picker strip */}
