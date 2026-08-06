@@ -12,6 +12,8 @@ interface InventoryItem {
   last_updated: string;
 }
 
+const ACCENT = "#E8674A";
+
 export default function InventoryPage() {
   const [items, setItems] = useState<InventoryItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -101,66 +103,55 @@ export default function InventoryPage() {
   }
 
   return (
-    <main className="min-h-screen bg-[#F7F6F2] px-5 py-8 md:px-10 md:py-12">
+    <main className="min-h-screen bg-white px-5 py-8 md:px-10 md:py-12">
       <div className="mx-auto max-w-2xl">
-        <div className="mb-8">
-            <div>
-            <h1 className="text-3xl font-extrabold tracking-tight text-[#1C1C1E]">
-              Inventory 🧺
-            </h1>
-            <p className="mt-1 text-sm text-[#1C1C1E]/50">
-              What's actually in your kitchen right now.
-            </p>
-          </div>
-          </div>
+        <header className="mb-8">
+          <h1 className="text-2xl font-bold tracking-tight text-[#1A1A1A]">Inventory</h1>
+          <p className="mt-0.5 text-sm text-[#1A1A1A]/45">What's actually in your kitchen right now.</p>
+        </header>
 
         {error && (
-          <div className="mb-6 rounded-2xl bg-[#FF6B5A]/10 px-5 py-3.5 text-sm font-medium text-[#D14A3A]">
-            {error}
-          </div>
+          <div className="mb-6 rounded-lg bg-red-50 px-4 py-3 text-sm text-red-600">{error}</div>
         )}
 
-        {/* Add item — for stuff not from this app's grocery lists */}
-        <div className="mb-6 rounded-3xl bg-white p-6 shadow-sm">
-          <h2 className="mb-3 text-sm font-bold text-[#1C1C1E]">Add an item</h2>
+        <div className="mb-8 border-b border-[#1A1A1A]/8 pb-6">
+          <h2 className="mb-3 text-sm font-bold text-[#1A1A1A]">Add an item</h2>
           <div className="flex flex-wrap gap-2">
             <input
               value={newItem}
               onChange={(e) => setNewItem(e.target.value)}
               placeholder="Item (e.g. rice)"
-              className="min-w-[140px] flex-1 rounded-full bg-[#F7F6F2] px-4 py-2 text-sm text-[#1C1C1E] outline-none focus:ring-2 focus:ring-[#1C1C1E]/10"
+              className="min-w-[140px] flex-1 rounded-full border border-[#1A1A1A]/12 px-4 py-2 text-sm text-[#1A1A1A] outline-none focus:border-[#1A1A1A]/30"
             />
             <input
               value={newQty}
               onChange={(e) => setNewQty(e.target.value)}
               placeholder="Qty"
               type="number"
-              className="w-20 rounded-full bg-[#F7F6F2] px-4 py-2 text-sm text-[#1C1C1E] outline-none focus:ring-2 focus:ring-[#1C1C1E]/10"
+              className="w-20 rounded-full border border-[#1A1A1A]/12 px-4 py-2 text-sm text-[#1A1A1A] outline-none focus:border-[#1A1A1A]/30"
             />
             <input
               value={newUnit}
               onChange={(e) => setNewUnit(e.target.value)}
               placeholder="Unit (e.g. lb)"
-              className="w-28 rounded-full bg-[#F7F6F2] px-4 py-2 text-sm text-[#1C1C1E] outline-none focus:ring-2 focus:ring-[#1C1C1E]/10"
+              className="w-24 rounded-full border border-[#1A1A1A]/12 px-4 py-2 text-sm text-[#1A1A1A] outline-none focus:border-[#1A1A1A]/30"
             />
             <button
               onClick={handleAdd}
               disabled={adding}
-              className="rounded-full bg-[#1C1C1E] px-5 py-2 text-sm font-bold text-white transition-all hover:scale-[1.02] disabled:opacity-50"
+              className="rounded-full px-5 py-2 text-sm font-bold text-white transition-opacity hover:opacity-90 disabled:opacity-50"
+              style={{ backgroundColor: ACCENT }}
             >
               {adding ? "Adding…" : "Add"}
             </button>
           </div>
         </div>
 
-        {/* Current stock — manually editable, for anything cooked outside the app */}
-        <div className="rounded-3xl bg-white p-6 shadow-sm">
-          <h2 className="mb-4 text-sm font-bold text-[#1C1C1E]">Current stock</h2>
-          {loading && <p className="text-sm text-[#1C1C1E]/40">Loading…</p>}
+        <div>
+          {loading && <p className="text-sm text-[#1A1A1A]/40">Loading…</p>}
           {!loading && items.length === 0 && (
-            <p className="text-sm text-[#1C1C1E]/40">
-              Nothing tracked yet — add an item above, or it'll fill in automatically
-              as you generate grocery lists and cook meals.
+            <p className="text-sm text-[#1A1A1A]/40">
+              Nothing tracked yet — add an item above, or it'll fill in automatically as you generate grocery lists and cook meals.
             </p>
           )}
 
@@ -170,18 +161,11 @@ export default function InventoryPage() {
 
             return (
               <div key={category} className="mb-6 last:mb-0">
-                <h3 className="mb-2 text-xs font-bold uppercase tracking-wide text-[#1C1C1E]/40">
-                  {category}
-                </h3>
-                <div className="space-y-2">
+                <h3 className="mb-2 text-xs font-bold uppercase tracking-wide text-[#1A1A1A]/40">{category}</h3>
+                <div className="divide-y divide-[#1A1A1A]/8">
                   {categoryItems.map((item) => (
-                    <div
-                      key={item.id}
-                      className="flex items-center justify-between gap-3 rounded-2xl bg-[#F7F6F2] px-4 py-3"
-                    >
-                      <span className="flex-1 truncate text-sm font-semibold text-[#1C1C1E]">
-                        {item.item}
-                      </span>
+                    <div key={item.id} className="flex items-center justify-between gap-3 py-2.5">
+                      <span className="flex-1 truncate text-sm font-semibold text-[#1A1A1A]">{item.item}</span>
                       {editingId === item.id ? (
                         <>
                           <input
@@ -189,37 +173,25 @@ export default function InventoryPage() {
                             onChange={(e) => setEditQty(e.target.value)}
                             type="number"
                             autoFocus
-                            className="w-20 rounded-full border-2 border-[#1C1C1E]/20 bg-white px-3 py-1.5 text-sm text-[#1C1C1E] outline-none"
+                            className="w-16 rounded-full border border-[#1A1A1A]/20 px-2 py-1 text-sm text-[#1A1A1A] outline-none"
                           />
-                          <span className="text-sm text-[#1C1C1E]/40">{item.unit}</span>
-                          <button
-                            onClick={() => saveEdit(item)}
-                            className="rounded-full bg-[#5FA88A] px-3 py-1.5 text-xs font-bold text-white"
-                          >
+                          <span className="text-sm text-[#1A1A1A]/40">{item.unit}</span>
+                          <button onClick={() => saveEdit(item)} className="text-xs font-bold" style={{ color: ACCENT }}>
                             Save
                           </button>
-                          <button
-                            onClick={() => setEditingId(null)}
-                            className="text-xs font-semibold text-[#1C1C1E]/30 hover:text-[#1C1C1E]/60"
-                          >
+                          <button onClick={() => setEditingId(null)} className="text-xs font-semibold text-[#1A1A1A]/30 hover:text-[#1A1A1A]/60">
                             Cancel
                           </button>
                         </>
                       ) : (
                         <>
-                          <span className="text-sm text-[#1C1C1E]/70">
+                          <span className="text-sm text-[#1A1A1A]/60">
                             {Math.round(item.quantity * 100) / 100} {item.unit}
                           </span>
-                          <button
-                            onClick={() => startEdit(item)}
-                            className="flex items-center gap-1 rounded-full bg-white px-3 py-1.5 text-xs font-semibold text-[#1C1C1E]/60 shadow-sm hover:text-[#1C1C1E]"
-                          >
-                            ✏️ Edit
+                          <button onClick={() => startEdit(item)} className="text-xs font-semibold text-[#1A1A1A]/40 hover:text-[#1A1A1A]">
+                            Edit
                           </button>
-                          <button
-                            onClick={() => handleDelete(item.id)}
-                            className="text-xs font-semibold text-[#1C1C1E]/30 hover:text-[#FF6B5A]"
-                          >
+                          <button onClick={() => handleDelete(item.id)} className="text-xs font-semibold text-[#1A1A1A]/30 hover:text-red-500">
                             Remove
                           </button>
                         </>

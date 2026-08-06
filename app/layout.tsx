@@ -24,7 +24,7 @@ export default function RootLayout({
 }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="en" className={jakarta.variable}>
-      <body className="font-[family-name:var(--font-sans)] bg-[#F7F6F2]">
+      <body className="font-[family-name:var(--font-sans)] bg-white">
         <div className="pb-20">{children}</div>
         <BottomNav />
       </body>
