@@ -201,7 +201,7 @@ export default function TodayView({
               {entry.meal.tags?.[0] && <span>🏷 {entry.meal.tags[0]}</span>}
               {inventoryMatchCount > 0 && (
                 <span style={{ color: ACCENT }}>
-                  ✓ Uses {inventoryMatchCount} thing{inventoryMatchCount === 1 ? "" : "s"} you have
+                  ✓ Uses {inventoryMatchCount}/{entry.meal.ingredients.length} things you have
                 </span>
               )}
             </div>
