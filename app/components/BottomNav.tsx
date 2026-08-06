@@ -18,7 +18,7 @@ export default function BottomNav() {
   const pathname = usePathname();
 
   return (
-    <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-[#1A1A1A]/8 bg-white">
+    <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-[#1A1A1A]/8 dark:border-[#F0F0F0]/8 bg-white dark:bg-[#161616]">
       <div className="mx-auto flex max-w-2xl items-center justify-around px-2 py-2">
         {TABS.map((tab) => {
           const active = pathname === tab.href;
@@ -31,8 +31,9 @@ export default function BottomNav() {
             >
               <span className="text-lg">{tab.icon}</span>
               <span
-                className="text-[10px] font-semibold"
-                style={{ color: active ? "white" : "#1A1A1A60" }}
+                className={`text-[10px] font-semibold ${
+                  active ? "text-white" : "text-[#1A1A1A]/60 dark:text-[#F0F0F0]/60"
+                }`}
               >
                 {tab.label}
               </span>

@@ -132,18 +132,18 @@ export default function CookingMode({
   const split = panes.length === 2;
 
   return (
-    <div className="fixed inset-0 z-50 flex flex-col bg-white text-[#1A1A1A]">
+    <div className="fixed inset-0 z-50 flex flex-col bg-white dark:bg-[#121212] text-[#1A1A1A] dark:text-[#F0F0F0]">
       {/* Top bar */}
       <div className="flex items-center justify-between px-6 py-5">
         <div>
-          <p className="text-xs font-semibold uppercase tracking-wide text-[#1A1A1A]/40">{mealName}</p>
-          <p className="text-sm font-semibold text-[#1A1A1A]/70">
+          <p className="text-xs font-semibold uppercase tracking-wide text-[#1A1A1A]/40 dark:text-[#F0F0F0]/40">{mealName}</p>
+          <p className="text-sm font-semibold text-[#1A1A1A]/70 dark:text-[#F0F0F0]/70">
             {split ? `Steps ${panes[0] + 1} & ${panes[1] + 1}` : `Step ${panes[0] + 1}`} of {steps.length}
           </p>
         </div>
         <button
           onClick={onClose}
-          className="text-sm font-semibold text-[#1A1A1A]/50 hover:text-[#1A1A1A]"
+          className="text-sm font-semibold text-[#1A1A1A]/50 dark:text-[#F0F0F0]/50 hover:text-[#1A1A1A] dark:hover:text-[#F0F0F0]"
         >
           ✕ Exit
         </button>
@@ -151,13 +151,18 @@ export default function CookingMode({
 
       {/* Progress dots */}
       <div className="flex justify-center gap-1.5 px-6">
-        {steps.map((_, i) => (
-          <div
-            key={i}
-            className="h-1.5 flex-1 rounded-full transition-colors"
-            style={{ backgroundColor: completed.has(i) || panes.includes(i) ? ACCENT : "#1A1A1A15" }}
-          />
-        ))}
+        {steps.map((_, i) => {
+          const active = completed.has(i) || panes.includes(i);
+          return (
+            <div
+              key={i}
+              className={`h-1.5 flex-1 rounded-full transition-colors ${
+                !active ? "bg-[#1A1A1A]/15 dark:bg-[#F0F0F0]/15" : ""
+              }`}
+              style={active ? { backgroundColor: ACCENT } : undefined}
+            />
+          );
+        })}
       </div>
 
       {/* Panes */}
@@ -173,14 +178,14 @@ export default function CookingMode({
             <div
               key={paneIdx}
               className={`flex flex-1 flex-col items-center justify-center gap-10 overflow-y-auto px-5 py-5 text-center ${
-                split && paneIdx === 0 ? "border-r border-[#1A1A1A]/8" : ""
+                split && paneIdx === 0 ? "border-r border-[#1A1A1A]/8 dark:border-[#F0F0F0]/8" : ""
               }`}
             >
               <div className="flex w-full flex-col items-center">
                 {split && (
                   <button
                     onClick={() => closePane(paneIdx)}
-                    className="mb-3 self-end text-xs font-semibold text-[#1A1A1A]/40 hover:text-[#1A1A1A]"
+                    className="mb-3 self-end text-xs font-semibold text-[#1A1A1A]/40 dark:text-[#F0F0F0]/40 hover:text-[#1A1A1A] dark:hover:text-[#F0F0F0]"
                   >
                     Close ✕
                   </button>
@@ -189,15 +194,17 @@ export default function CookingMode({
                 <h1 className={`mb-3 max-w-md font-bold leading-tight ${split ? "text-xl md:text-2xl" : "text-3xl md:text-4xl"}`}>
                   {step.title}
                 </h1>
-                <p className={`mb-6 max-w-md text-[#1A1A1A]/60 ${split ? "text-sm md:text-base" : "text-lg md:text-xl"}`}>
+                <p className={`mb-6 max-w-md text-[#1A1A1A]/60 dark:text-[#F0F0F0]/60 ${split ? "text-sm md:text-base" : "text-lg md:text-xl"}`}>
                   {step.content}
                 </p>
 
                 {step.timer_seconds !== null && timer && (
                   <div className="mb-6 flex flex-col items-center">
                     <div
-                      className={`mb-3 font-bold tabular-nums ${split ? "text-4xl md:text-5xl" : "text-7xl md:text-8xl"}`}
-                      style={{ color: timer.finished ? ACCENT : "#1A1A1A" }}
+                      className={`mb-3 font-bold tabular-nums ${split ? "text-4xl md:text-5xl" : "text-7xl md:text-8xl"} ${
+                        !timer.finished ? "text-[#1A1A1A] dark:text-[#F0F0F0]" : ""
+                      }`}
+                      style={timer.finished ? { color: ACCENT } : undefined}
                     >
                       {formatTime(timer.remaining)}
                     </div>
@@ -215,7 +222,7 @@ export default function CookingMode({
                       </button>
                       <button
                         onClick={() => resetTimer(stepIndex)}
-                        className="rounded-full border border-[#1A1A1A]/15 px-5 py-2.5 text-sm font-semibold text-[#1A1A1A]/70 hover:border-[#1A1A1A]/30"
+                        className="rounded-full border border-[#1A1A1A]/15 dark:border-[#F0F0F0]/15 px-5 py-2.5 text-sm font-semibold text-[#1A1A1A]/70 dark:text-[#F0F0F0]/70 hover:border-[#1A1A1A]/30 dark:hover:border-[#F0F0F0]/30"
                       >
                         Reset
                       </button>
@@ -228,7 +235,7 @@ export default function CookingMode({
                 <button
                   onClick={() => goBack(paneIdx)}
                   disabled={stepIndex === 0}
-                  className="w-full rounded-full border border-[#1A1A1A]/15 px-4 py-2.5 text-sm font-bold text-[#1A1A1A] transition-colors hover:border-[#1A1A1A]/30 disabled:opacity-30"
+                  className="w-full rounded-full border border-[#1A1A1A]/15 dark:border-[#F0F0F0]/15 px-4 py-2.5 text-sm font-bold text-[#1A1A1A] dark:text-[#F0F0F0] transition-colors hover:border-[#1A1A1A]/30 dark:hover:border-[#F0F0F0]/30 disabled:opacity-30"
                 >
                   ← Back
                 </button>
@@ -242,7 +249,7 @@ export default function CookingMode({
                 <button
                   onClick={() => nextAndKeepOpen(paneIdx)}
                   disabled={split || !canKeepOpen}
-                  className="w-full text-xs font-semibold text-[#1A1A1A]/40 hover:text-[#1A1A1A] disabled:opacity-30"
+                  className="w-full text-xs font-semibold text-[#1A1A1A]/40 dark:text-[#F0F0F0]/40 hover:text-[#1A1A1A] dark:hover:text-[#F0F0F0] disabled:opacity-30"
                 >
                   {split ? "Already showing 2 steps" : "Next → (keep this open too)"}
                 </button>
