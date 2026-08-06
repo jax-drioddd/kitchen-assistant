@@ -1,7 +1,7 @@
 // app/components/Dashboard.tsx
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { normalizeSteps, renderStepContent } from "../lib/steps";
 
 interface Ingredient {
@@ -49,6 +49,17 @@ export default function Dashboard({ initialWeek }: { initialWeek: DayEntry[] | n
   >([]);
   const [chatLoading, setChatLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [inventoryNames, setInventoryNames] = useState<Set<string>>(new Set());
+
+  useEffect(() => {
+    fetch("/api/inventory")
+      .then((res) => res.json())
+      .then((data) => {
+        const names = (data.items ?? []).map((i: any) => i.item.toLowerCase().trim());
+        setInventoryNames(new Set(names));
+      })
+      .catch(() => {});
+  }, []);
 
   function toggleDay(day: string) {
     setSelectedDays((prev) =>
@@ -230,67 +241,87 @@ export default function Dashboard({ initialWeek }: { initialWeek: DayEntry[] | n
 
         {week && (
           <div className="mb-8 divide-y divide-[#1A1A1A]/8">
-            {week.map(({ day, meal }) => (
-              <details key={day} className="group py-4 first:pt-0">
-                <summary className="flex cursor-pointer list-none items-center justify-between gap-4">
-                  <div className="flex items-center gap-3.5">
-                    {meal.image_url ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img src={meal.image_url} alt={day} className="h-11 w-11 shrink-0 rounded-lg object-cover" />
-                    ) : (
-                      <div
-                        className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg text-xs font-bold text-white"
-                        style={{ backgroundColor: ACCENT }}
-                      >
-                        {day.slice(0, 2).toUpperCase()}
-                      </div>
-                    )}
-                    <div>
-                      <span className="text-xs font-bold uppercase tracking-wide text-[#1A1A1A]/40">{day}</span>
-                      <h2 className="text-base font-bold text-[#1A1A1A]">{meal.name}</h2>
-                    </div>
-                  </div>
-                  <span className="text-[#1A1A1A]/25 transition-transform group-open:rotate-180">▾</span>
-                </summary>
+            {week.map(({ day, meal }) => {
+              const matchCount = meal.ingredients.filter((ing) =>
+                inventoryNames.has(ing.name.toLowerCase().trim())
+              ).length;
 
-                <div className="pt-4">
-                  {meal.image_url && (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img src={meal.image_url} alt={meal.name} className="mb-4 h-64 w-full rounded-xl object-cover" />
-                  )}
-                  <div className="grid gap-6 sm:grid-cols-2">
-                    <div>
-                      <h3 className="mb-2 text-xs font-bold uppercase tracking-wide text-[#1A1A1A]/40">
-                        Ingredients
-                      </h3>
-                      <ul className="space-y-1.5 text-sm text-[#1A1A1A]/80">
-                        {meal.ingredients.map((ing, idx) => (
-                          <li key={idx}>
-                            <span className="font-bold text-[#1A1A1A]">{ing.quantity} {ing.unit}</span> {ing.name}
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                    <div>
-                      <h3 className="mb-2 text-xs font-bold uppercase tracking-wide text-[#1A1A1A]/40">
-                        Instructions
-                      </h3>
-                      <ol className="space-y-2 text-sm leading-relaxed text-[#1A1A1A]/80">
-                        {normalizeSteps(meal.instructions).map((step, idx) => (
-                          <li key={idx} className="flex gap-2.5">
-                            <span className="font-bold text-[#1A1A1A]/30">{idx + 1}</span>
-                            <span>
-                              <span className="font-bold text-[#1A1A1A]">{step.title}.</span>{" "}
-                              {renderStepContent(step.content, meal.ingredients, meal.base_servings ?? 2, meal.base_servings ?? 2)}
+              return (
+                <details key={day} className="group py-4 first:pt-0">
+                  <summary className="flex cursor-pointer list-none items-center justify-between gap-4">
+                    <div className="flex items-center gap-4">
+                      {meal.image_url ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img src={meal.image_url} alt={day} className="h-14 w-14 shrink-0 rounded-xl object-cover" />
+                      ) : (
+                        <div
+                          className="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl text-xs font-bold text-white"
+                          style={{ backgroundColor: ACCENT }}
+                        >
+                          {day.slice(0, 2).toUpperCase()}
+                        </div>
+                      )}
+                      <div>
+                        <span className="text-xs font-bold uppercase tracking-wide text-[#1A1A1A]/40">{day}</span>
+                        <h2 className="text-lg font-bold leading-tight text-[#1A1A1A]">{meal.name}</h2>
+                        <div className="mt-0.5 flex flex-wrap items-center gap-3 text-xs font-semibold uppercase tracking-wide text-[#1A1A1A]/40">
+                          {meal.tags?.[0] && <span>🏷 {meal.tags[0]}</span>}
+                          {matchCount > 0 && (
+                            <span style={{ color: ACCENT }}>
+                              ✓ Uses {matchCount} thing{matchCount === 1 ? "" : "s"} you have
                             </span>
-                          </li>
-                        ))}
-                      </ol>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                    <span className="text-[#1A1A1A]/25 transition-transform group-open:rotate-180">▾</span>
+                  </summary>
+
+                  <div className="pt-4">
+                    {meal.image_url && (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={meal.image_url} alt={meal.name} className="mb-4 h-64 w-full rounded-xl object-cover" />
+                    )}
+                    <div className="grid gap-6 sm:grid-cols-2">
+                      <div>
+                        <h3 className="mb-2 text-xs font-bold uppercase tracking-wide text-[#1A1A1A]/40">
+                          Ingredients
+                        </h3>
+                        <ul className="space-y-1.5 text-sm text-[#1A1A1A]/80">
+                          {meal.ingredients.map((ing, idx) => {
+                            const haveIt = inventoryNames.has(ing.name.toLowerCase().trim());
+                            return (
+                              <li key={idx}>
+                                <span className="font-bold text-[#1A1A1A]">{ing.quantity} {ing.unit}</span> {ing.name}
+                                {haveIt && (
+                                  <span className="ml-1.5 text-xs font-bold" style={{ color: ACCENT }}>✓</span>
+                                )}
+                              </li>
+                            );
+                          })}
+                        </ul>
+                      </div>
+                      <div>
+                        <h3 className="mb-2 text-xs font-bold uppercase tracking-wide text-[#1A1A1A]/40">
+                          Instructions
+                        </h3>
+                        <ol className="space-y-2 text-sm leading-relaxed text-[#1A1A1A]/80">
+                          {normalizeSteps(meal.instructions).map((step, idx) => (
+                            <li key={idx} className="flex gap-2.5">
+                              <span className="font-bold text-[#1A1A1A]/30">{idx + 1}</span>
+                              <span>
+                                <span className="font-bold text-[#1A1A1A]">{step.title}.</span>{" "}
+                                {renderStepContent(step.content, meal.ingredients, meal.base_servings ?? 2, meal.base_servings ?? 2)}
+                              </span>
+                            </li>
+                          ))}
+                        </ol>
+                      </div>
                     </div>
                   </div>
-                </div>
-              </details>
-            ))}
+                </details>
+              );
+            })}
           </div>
         )}
 
