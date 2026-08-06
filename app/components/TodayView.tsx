@@ -18,7 +18,7 @@ interface Meal {
   day: string;
   name: string;
   ingredients: Ingredient[];
-  instructions: any[]; // legacy string[] or new {title,content,timer_seconds}[] — normalizeSteps() handles both
+  instructions: any[];
   tags: string[];
   image_url?: string | null;
   base_servings?: number;
@@ -29,15 +29,11 @@ interface DayEntry {
   meal: Meal;
 }
 
-const ACCENTS = [
-  { name: "coral", bg: "#FF6B5A", soft: "#FFEEEC" },
-  { name: "sunflower", bg: "#F5A623", soft: "#FFF6E5" },
-  { name: "sky", bg: "#4A9DE0", soft: "#EAF4FC" },
-  { name: "sage", bg: "#5FA88A", soft: "#EAF5F0" },
-  { name: "plum", bg: "#9B6BE5", soft: "#F3EDFC" },
-  { name: "rose", bg: "#F2739E", soft: "#FDECF2" },
-  { name: "teal", bg: "#3EB0A8", soft: "#E8F7F5" },
-];
+// One accent color, used sparingly — not a rainbow per day. This is the
+// core restraint that makes Mela's design read as editorial rather than
+// "playful app."
+const ACCENT = "#E8674A";
+const ACCENT_SOFT = "#FDEEE9";
 
 const ALL_DAYS = [
   "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday",
@@ -66,9 +62,7 @@ export default function TodayView({
         const names = (data.items ?? []).map((i: any) => i.item.toLowerCase().trim());
         setInventoryNames(new Set(names));
       })
-      .catch(() => {
-        // Non-critical — the "uses what you have" indicator just won't show, generation still works
-      });
+      .catch(() => {});
   }, []);
 
   async function handleFeedback(mealId: string | undefined, status: "cooked" | "skipped", rating: number | null) {
@@ -87,17 +81,16 @@ export default function TodayView({
 
   if (!week || week.length === 0) {
     return (
-      <main className="flex min-h-screen items-center justify-center bg-[#F7F6F2] px-5">
-        <div className="max-w-sm rounded-3xl bg-white p-8 text-center shadow-sm">
-          <h1 className="mb-2 text-2xl font-extrabold text-[#1C1C1E]">
-            No plan yet 🍽️
-          </h1>
-          <p className="mb-6 text-sm text-[#1C1C1E]/50">
+      <main className="flex min-h-screen items-center justify-center bg-white px-5">
+        <div className="max-w-sm text-center">
+          <h1 className="mb-2 text-2xl font-bold text-[#1A1A1A]">No plan yet</h1>
+          <p className="mb-6 text-sm text-[#1A1A1A]/50">
             Nothing planned for this week. Head to the planner to generate one.
           </p>
           <Link
             href="/plan"
-            className="inline-block rounded-full bg-[#1C1C1E] px-6 py-3 text-sm font-bold text-white shadow-md transition-all hover:scale-[1.02]"
+            className="inline-block rounded-full px-6 py-3 text-sm font-bold text-white transition-opacity hover:opacity-90"
+            style={{ backgroundColor: ACCENT }}
           >
             Plan this week →
           </Link>
@@ -109,15 +102,17 @@ export default function TodayView({
   const entry = week.find((d) => d.day === selectedDay);
   const dayIndex = ALL_DAYS.indexOf(selectedDay ?? "");
   const todayIndex = ALL_DAYS.indexOf(todayName);
-  const accent = ACCENTS[dayIndex >= 0 ? dayIndex % ACCENTS.length : 0];
   const isToday = selectedDay === todayName;
   const isPast = dayIndex >= 0 && todayIndex >= 0 && dayIndex < todayIndex;
 
+  let subtitle: string;
+  if (isToday) subtitle = "What you're cooking today.";
+  else if (isPast) subtitle = `Looking back at ${selectedDay}.`;
+  else subtitle = `Coming up on ${selectedDay}.`;
+
   const baseServings = entry?.meal.base_servings ?? 2;
   const currentServings =
-    entry?.meal.id != null
-      ? servingsOverride[entry.meal.id] ?? baseServings
-      : baseServings;
+    entry?.meal.id != null ? servingsOverride[entry.meal.id] ?? baseServings : baseServings;
 
   function adjustServings(delta: number) {
     if (!entry?.meal.id) return;
@@ -127,138 +122,112 @@ export default function TodayView({
     }));
   }
 
-  let subtitle: string;
-  if (isToday) {
-    subtitle = "What you're cooking today.";
-  } else if (isPast) {
-    subtitle = `Looking back at ${selectedDay}.`;
-  } else {
-    subtitle = `Coming up on ${selectedDay}.`;
-  }
+  const steps = entry ? normalizeSteps(entry.meal.instructions) : [];
+  const scaledIngredients = entry
+    ? scaleIngredients(entry.meal.ingredients, baseServings, currentServings)
+    : [];
+  const inventoryMatchCount = entry
+    ? entry.meal.ingredients.filter((ing) => inventoryNames.has(ing.name.toLowerCase().trim())).length
+    : 0;
 
   return (
-    <main className="min-h-screen bg-[#F7F6F2] px-5 py-8 md:px-10 md:py-12">
+    <main className="min-h-screen bg-white px-5 py-8 md:px-10 md:py-12">
       <div className="mx-auto max-w-2xl">
         <header className="mb-6">
-          <h1 className="text-3xl font-extrabold tracking-tight text-[#1C1C1E]">
-            {isToday ? "Tonight" : selectedDay} 🍽️
+          <h1 className="text-2xl font-bold tracking-tight text-[#1A1A1A]">
+            {isToday ? "Tonight" : selectedDay}
           </h1>
-          <p className="mt-1 text-sm text-[#1C1C1E]/50">{subtitle}</p>
+          <p className="mt-0.5 text-sm text-[#1A1A1A]/45">{subtitle}</p>
         </header>
 
-        {/* Day picker strip */}
-        <div className="mb-6 flex gap-2 overflow-x-auto pb-1">
-          {week.map(({ day }, i) => {
-            const dColor = ACCENTS[i % ACCENTS.length];
+        {/* Day picker — plain text rows, solid highlight only on the active day */}
+        <div className="mb-8 flex gap-1 overflow-x-auto pb-1">
+          {week.map(({ day }) => {
             const active = day === selectedDay;
             return (
               <button
                 key={day}
                 onClick={() => setSelectedDay(day)}
-                className="shrink-0 rounded-full px-4 py-2 text-sm font-semibold transition-all"
+                className="shrink-0 rounded-full px-3.5 py-1.5 text-sm font-semibold transition-colors"
                 style={
                   active
-                    ? { backgroundColor: dColor.bg, color: "white" }
-                    : { backgroundColor: "white", color: "#1C1C1E80" }
+                    ? { backgroundColor: ACCENT, color: "white" }
+                    : { color: "#1A1A1A70" }
                 }
               >
                 {day.slice(0, 3)}
-                {day === todayName && " •"}
+                {day === todayName && !active && " ·"}
               </button>
             );
           })}
         </div>
 
         {error && (
-          <div className="mb-6 rounded-2xl bg-[#FF6B5A]/10 px-5 py-3.5 text-sm font-medium text-[#D14A3A]">
-            {error}
-          </div>
+          <div className="mb-6 rounded-lg bg-red-50 px-4 py-3 text-sm text-red-600">{error}</div>
         )}
 
         {entry && (
-          <div className="rounded-3xl bg-white p-6 shadow-sm md:p-8">
-            <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-              <h2 className="text-2xl font-bold text-[#1C1C1E]">{entry.meal.name}</h2>
-              <div className="flex gap-1.5">
-                {entry.meal.tags?.slice(0, 3).map((tag) => (
-                  <span
-                    key={tag}
-                    className="rounded-full px-2.5 py-1 text-xs font-semibold"
-                    style={{ backgroundColor: accent.soft, color: accent.bg }}
-                  >
-                    {tag}
-                  </span>
-                ))}
-              </div>
-            </div>
+          <div>
+            <h2 className="mb-2 text-3xl font-bold leading-tight text-[#1A1A1A]">
+              {entry.meal.name}
+            </h2>
 
-            {(() => {
-              const matchCount = entry.meal.ingredients.filter((ing) =>
-                inventoryNames.has(ing.name.toLowerCase().trim())
-              ).length;
-              if (matchCount === 0) return null;
-              return (
-                <div
-                  className="mb-4 inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-bold"
-                  style={{ backgroundColor: "#EAF5F0", color: "#5FA88A" }}
-                >
-                  🧺 Uses {matchCount} thing{matchCount === 1 ? "" : "s"} you already have
-                </div>
-              );
-            })()}
+            {/* Metadata row — icons + small caps, gray, no color */}
+            <div className="mb-4 flex flex-wrap items-center gap-4 text-xs font-semibold uppercase tracking-wide text-[#1A1A1A]/40">
+              <span>👥 {currentServings} servings</span>
+              {entry.meal.tags?.[0] && <span>🏷 {entry.meal.tags[0]}</span>}
+              {inventoryMatchCount > 0 && (
+                <span style={{ color: ACCENT }}>
+                  ✓ Uses {inventoryMatchCount} thing{inventoryMatchCount === 1 ? "" : "s"} you have
+                </span>
+              )}
+            </div>
 
             {entry.meal.image_url && (
               // eslint-disable-next-line @next/next/no-img-element
               <img
                 src={entry.meal.image_url}
                 alt={entry.meal.name}
-                className="mb-5 h-72 w-full rounded-2xl object-cover shadow-sm"
+                className="mb-6 h-72 w-full rounded-xl object-cover"
               />
             )}
 
-            {/* Servings — adjustable per-recipe, independent of your default preference */}
-            <div className="mb-4 flex items-center gap-3">
-              <span className="text-sm font-semibold text-[#1C1C1E]/50">Servings</span>
+            {/* Action row — text + icon, not filled pill buttons */}
+            <div className="mb-8 flex items-center gap-6 border-b border-t border-[#1A1A1A]/8 py-3">
               <button
-                onClick={() => adjustServings(-1)}
-                className="flex h-8 w-8 items-center justify-center rounded-full bg-[#F7F6F2] text-base font-bold text-[#1C1C1E]/70 hover:bg-[#EDECE7]"
+                onClick={() => setCookingMode(true)}
+                className="flex items-center gap-1.5 text-sm font-bold"
+                style={{ color: ACCENT }}
               >
-                −
+                ▶ Cook
               </button>
-              <span className="w-6 text-center text-base font-bold text-[#1C1C1E]">
-                {currentServings}
-              </span>
-              <button
-                onClick={() => adjustServings(1)}
-                className="flex h-8 w-8 items-center justify-center rounded-full bg-[#F7F6F2] text-base font-bold text-[#1C1C1E]/70 hover:bg-[#EDECE7]"
-              >
-                +
-              </button>
-              {currentServings !== baseServings && (
-                <span className="text-xs text-[#1C1C1E]/40">
-                  (normally {baseServings})
-                </span>
-              )}
+              <div className="flex items-center gap-1.5 text-sm font-semibold text-[#1A1A1A]/50">
+                <button onClick={() => adjustServings(-1)} className="px-1 hover:text-[#1A1A1A]">
+                  −
+                </button>
+                <span className="text-[#1A1A1A]">{currentServings} servings</span>
+                <button onClick={() => adjustServings(1)} className="px-1 hover:text-[#1A1A1A]">
+                  +
+                </button>
+              </div>
             </div>
 
-            <div
-              className="grid gap-6 rounded-2xl p-5 sm:grid-cols-2"
-              style={{ backgroundColor: accent.soft }}
-            >
+            <div className="grid gap-10 sm:grid-cols-[1fr_1.4fr]">
               <div>
-                <h3 className="mb-2.5 text-xs font-bold uppercase tracking-wide" style={{ color: accent.bg }}>
+                <h3 className="mb-3 text-xs font-bold uppercase tracking-wide text-[#1A1A1A]/40">
                   Ingredients
                 </h3>
-                <ul className="space-y-1.5 text-sm text-[#1C1C1E]/80">
-                  {scaleIngredients(entry.meal.ingredients, baseServings, currentServings).map((ing, i) => {
+                <ul className="space-y-2 text-sm text-[#1A1A1A]/85">
+                  {scaledIngredients.map((ing, i) => {
                     const haveIt = inventoryNames.has(ing.name.toLowerCase().trim());
                     return (
-                      <li key={i} className="flex items-center gap-1.5">
-                        <span>
-                          {Math.round(ing.quantity * 100) / 100} {ing.unit} {ing.name}
-                        </span>
+                      <li key={i}>
+                        <span className="font-bold text-[#1A1A1A]">
+                          {Math.round(ing.quantity * 100) / 100} {ing.unit}
+                        </span>{" "}
+                        {ing.name}
                         {haveIt && (
-                          <span className="text-xs font-bold text-[#5FA88A]" title="Already in your inventory">
+                          <span className="ml-1.5 text-xs" style={{ color: ACCENT }}>
                             ✓
                           </span>
                         )}
@@ -267,16 +236,17 @@ export default function TodayView({
                   })}
                 </ul>
               </div>
+
               <div>
-                <h3 className="mb-2.5 text-xs font-bold uppercase tracking-wide" style={{ color: accent.bg }}>
+                <h3 className="mb-3 text-xs font-bold uppercase tracking-wide text-[#1A1A1A]/40">
                   Instructions
                 </h3>
-                <ol className="space-y-2.5 text-sm text-[#1C1C1E]/80">
-                  {normalizeSteps(entry.meal.instructions).map((step, i) => (
-                    <li key={i} className="flex gap-2.5">
-                      <span className="font-bold" style={{ color: accent.bg }}>{i + 1}</span>
+                <ol className="space-y-3 text-sm leading-relaxed text-[#1A1A1A]/85">
+                  {steps.map((step, i) => (
+                    <li key={i} className="flex gap-3">
+                      <span className="font-bold text-[#1A1A1A]/30">{i + 1}</span>
                       <span>
-                        <span className="font-semibold text-[#1C1C1E]">{step.title}.</span>{" "}
+                        <span className="font-bold text-[#1A1A1A]">{step.title}.</span>{" "}
                         {renderStepContent(step.content, entry.meal.ingredients, baseServings, currentServings)}
                       </span>
                     </li>
@@ -285,42 +255,27 @@ export default function TodayView({
               </div>
             </div>
 
-            <button
-              onClick={() => setCookingMode(true)}
-              className="mt-5 rounded-full px-6 py-3 text-sm font-bold text-white shadow-md transition-all hover:scale-[1.02] hover:shadow-lg"
-              style={{ backgroundColor: accent.bg }}
-            >
-              👨‍🍳 Start cooking mode
-            </button>
-
-            {entry.meal.id && ratedMeals[entry.meal.id] ? (
-              <p className="mt-5 text-sm font-semibold text-[#1C1C1E]/40">
-                {ratedMeals[entry.meal.id] === "skipped"
-                  ? "Marked as skipped — won't suggest this again soon."
-                  : "Thanks — noted for next time."}
-              </p>
-            ) : (
-              <div className="mt-5 flex flex-wrap gap-2">
-                <button
-                  onClick={() => handleFeedback(entry.meal.id, "cooked", 5)}
-                  className="rounded-full bg-[#F7F6F2] px-4 py-2 text-sm font-semibold text-[#1C1C1E]/70 transition-all hover:bg-[#EDECE7]"
-                >
-                  👍 Loved it
-                </button>
-                <button
-                  onClick={() => handleFeedback(entry.meal.id, "cooked", 1)}
-                  className="rounded-full bg-[#F7F6F2] px-4 py-2 text-sm font-semibold text-[#1C1C1E]/70 transition-all hover:bg-[#EDECE7]"
-                >
-                  👎 Not for me
-                </button>
-                <button
-                  onClick={() => handleFeedback(entry.meal.id, "skipped", null)}
-                  className="rounded-full bg-[#F7F6F2] px-4 py-2 text-sm font-semibold text-[#1C1C1E]/70 transition-all hover:bg-[#EDECE7]"
-                >
-                  ⏭️ Skipped it
-                </button>
-              </div>
-            )}
+            <div className="mt-8 border-t border-[#1A1A1A]/8 pt-6">
+              {entry.meal.id && ratedMeals[entry.meal.id] ? (
+                <p className="text-sm font-semibold text-[#1A1A1A]/40">
+                  {ratedMeals[entry.meal.id] === "skipped"
+                    ? "Marked as skipped — won't suggest this again soon."
+                    : "Thanks — noted for next time."}
+                </p>
+              ) : (
+                <div className="flex flex-wrap gap-4 text-sm font-semibold text-[#1A1A1A]/50">
+                  <button onClick={() => handleFeedback(entry.meal.id, "cooked", 5)} className="hover:text-[#1A1A1A]">
+                    👍 Loved it
+                  </button>
+                  <button onClick={() => handleFeedback(entry.meal.id, "cooked", 1)} className="hover:text-[#1A1A1A]">
+                    👎 Not for me
+                  </button>
+                  <button onClick={() => handleFeedback(entry.meal.id, "skipped", null)} className="hover:text-[#1A1A1A]">
+                    ⏭️ Skipped it
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
         )}
       </div>
