@@ -2,7 +2,6 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
 import { normalizeSteps, renderStepContent } from "../lib/steps";
 
 interface Ingredient {
@@ -219,12 +218,6 @@ export default function Dashboard({ initialWeek }: { initialWeek: DayEntry[] | n
         {/* Header */}
         <header className="mb-8 flex items-center justify-between">
           <div>
-            <Link
-              href="/"
-              className="mb-2 inline-block text-sm font-semibold text-[#1C1C1E]/40 hover:text-[#1C1C1E]/70"
-            >
-              ← Back to this week
-            </Link>
             <h1 className="text-3xl font-extrabold tracking-tight text-[#1C1C1E] md:text-4xl">
               Create week plan 📝
             </h1>
@@ -232,17 +225,8 @@ export default function Dashboard({ initialWeek }: { initialWeek: DayEntry[] | n
               Generate meals, adjust with chat, and build your grocery list.
             </p>
           </div>
-          <div className="flex items-center gap-3">
-            <div className="rounded-full bg-white px-4 py-2 text-sm font-semibold text-[#1C1C1E]/70 shadow-sm">
-              {week ? `${week.length} meal${week.length === 1 ? "" : "s"}` : "No plan yet"}
-            </div>
-            <Link
-              href="/preferences"
-              className="rounded-full bg-white px-4 py-2 text-sm shadow-sm transition-all hover:shadow-md"
-              aria-label="Preferences"
-            >
-              ⚙️
-            </Link>
+          <div className="rounded-full bg-white px-4 py-2 text-sm font-semibold text-[#1C1C1E]/70 shadow-sm">
+            {week ? `${week.length} meal${week.length === 1 ? "" : "s"}` : "No plan yet"}
           </div>
         </header>
 

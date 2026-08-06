@@ -6,6 +6,7 @@
 import type { Metadata } from "next";
 import { Plus_Jakarta_Sans } from "next/font/google";
 import "./globals.css";
+import BottomNav from "./components/BottomNav";
 
 const jakarta = Plus_Jakarta_Sans({
   subsets: ["latin"],
@@ -24,7 +25,8 @@ export default function RootLayout({
   return (
     <html lang="en" className={jakarta.variable}>
       <body className="font-[family-name:var(--font-sans)] bg-[#F7F6F2]">
-        {children}
+        <div className="pb-20">{children}</div>
+        <BottomNav />
       </body>
     </html>
   );

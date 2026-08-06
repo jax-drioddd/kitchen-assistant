@@ -2,7 +2,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
 
 interface Preferences {
   dislikes: string[];
@@ -140,8 +139,8 @@ export default function PreferencesPage() {
   return (
     <main className="min-h-screen bg-[#F7F6F2] px-5 py-8 md:px-10 md:py-12">
       <div className="mx-auto max-w-2xl">
-        <div className="mb-8 flex items-center justify-between">
-          <div>
+        <div className="mb-8">
+            <div>
             <h1 className="text-3xl font-extrabold tracking-tight text-[#1C1C1E]">
               Preferences ⚙️
             </h1>
@@ -149,13 +148,7 @@ export default function PreferencesPage() {
               What the assistant should know before it plans anything.
             </p>
           </div>
-          <Link
-            href="/"
-            className="rounded-full bg-white px-4 py-2 text-sm font-semibold text-[#1C1C1E]/70 shadow-sm hover:shadow-md"
-          >
-            ← Back
-          </Link>
-        </div>
+          </div>
 
         {error && (
           <div className="mb-6 rounded-2xl bg-[#FF6B5A]/10 px-5 py-3.5 text-sm font-medium text-[#D14A3A]">

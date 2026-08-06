@@ -8,7 +8,6 @@
 export const dynamic = "force-dynamic";
 
 import { createClient } from "@supabase/supabase-js";
-import Link from "next/link";
 
 const supabase = createClient(
   process.env.SUPABASE_URL!,
@@ -84,8 +83,8 @@ export default async function HistoryPage() {
   return (
     <main className="min-h-screen bg-[#F7F6F2] px-5 py-8 md:px-10 md:py-12">
       <div className="mx-auto max-w-2xl">
-        <div className="mb-8 flex items-center justify-between">
-          <div>
+        <div className="mb-8">
+            <div>
             <h1 className="text-3xl font-extrabold tracking-tight text-[#1C1C1E]">
               History 📅
             </h1>
@@ -93,13 +92,7 @@ export default async function HistoryPage() {
               Everything you've cooked, skipped, and rated.
             </p>
           </div>
-          <Link
-            href="/"
-            className="rounded-full bg-white px-4 py-2 text-sm font-semibold text-[#1C1C1E]/70 shadow-sm hover:shadow-md"
-          >
-            ← Back
-          </Link>
-        </div>
+          </div>
 
         {sortedWeeks.length === 0 && (
           <div className="rounded-3xl bg-white p-8 text-center shadow-sm">
