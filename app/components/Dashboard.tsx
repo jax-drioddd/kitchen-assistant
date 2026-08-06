@@ -36,6 +36,7 @@ const ACCENT = "#E8674A";
 export default function Dashboard({ initialWeek }: { initialWeek: DayEntry[] | null }) {
   const [week, setWeek] = useState<DayEntry[] | null>(initialWeek);
   const [selectedDays, setSelectedDays] = useState<string[]>(ALL_DAYS);
+  const [weekInstructions, setWeekInstructions] = useState("");
   const [showOnboarding, setShowOnboarding] = useState(!initialWeek);
   const [generating, setGenerating] = useState(false);
   const [groceryLoading, setGroceryLoading] = useState(false);
@@ -62,7 +63,7 @@ export default function Dashboard({ initialWeek }: { initialWeek: DayEntry[] | n
       const res = await fetch("/api/generate-week", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ days: selectedDays }),
+        body: JSON.stringify({ days: selectedDays, instructions: weekInstructions }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "Couldn't generate the week. Try again.");
@@ -188,6 +189,21 @@ export default function Dashboard({ initialWeek }: { initialWeek: DayEntry[] | n
                 </button>
               ))}
             </div>
+
+            <label className="mb-1 block text-sm font-bold text-[#1A1A1A]">
+              Anything specific for this week? <span className="font-normal text-[#1A1A1A]/40">(optional)</span>
+            </label>
+            <p className="mb-2 text-xs text-[#1A1A1A]/40">
+              e.g. "chicken Monday, something Indian Wednesday, keep it light this week"
+            </p>
+            <textarea
+              value={weekInstructions}
+              onChange={(e) => setWeekInstructions(e.target.value)}
+              placeholder="Type any day-specific requests or general themes…"
+              rows={2}
+              className="mb-5 w-full resize-none rounded-2xl border border-[#1A1A1A]/12 px-4 py-2.5 text-sm text-[#1A1A1A] outline-none focus:border-[#1A1A1A]/30"
+            />
+
             <button
               onClick={handleGenerate}
               disabled={generating || selectedDays.length === 0}
