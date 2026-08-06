@@ -89,6 +89,12 @@ export default function PreferencesPage() {
       .then((data) => {
         setPrefs(data);
         setLoading(false);
+        // Sync the actual page theme to match what we just loaded — the
+        // <html> class only gets set on a full server render, but client-
+        // side navigation between pages (e.g. via the bottom nav) doesn't
+        // re-run that, so it can drift out of sync with the real saved
+        // value without this.
+        document.documentElement.classList.toggle("dark", !!data.dark_mode);
       })
       .catch(() => {
         setError("Couldn't load your preferences.");
