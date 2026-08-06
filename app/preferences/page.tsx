@@ -117,6 +117,33 @@ export default function PreferencesPage() {
     }
   }
 
+  // Dark mode is a live UI state, not a batch-edit field — it applies and
+  // saves instantly on toggle, independent of the "Save preferences" button
+  // used for everything else on this page.
+  async function handleToggleDarkMode() {
+    if (!prefs) return;
+    const newValue = !prefs.dark_mode;
+
+    // Instant visual change — flip the class directly, since the theme is
+    // normally applied server-side on page load and a client click alone
+    // can't retroactively change what already rendered.
+    document.documentElement.classList.toggle("dark", newValue);
+
+    const updated = { ...prefs, dark_mode: newValue };
+    setPrefs(updated);
+
+    // Save just this, in the background, independent of the main Save button.
+    try {
+      await fetch("/api/preferences", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(updated),
+      });
+    } catch {
+      setError("Dark mode changed, but couldn't save it — it may not stick after reload.");
+    }
+  }
+
   if (loading) {
     return (
       <main className="min-h-screen bg-white dark:bg-[#121212] px-5 py-10 md:px-10">
@@ -221,10 +248,10 @@ export default function PreferencesPage() {
           <div className="flex items-center justify-between">
             <div>
               <label className="mb-1 block text-sm font-bold text-[#1A1A1A] dark:text-[#F0F0F0]">Dark mode</label>
-              <p className="text-xs text-[#1A1A1A]/40 dark:text-[#F0F0F0]/40">Applies across the whole app.</p>
+              <p className="text-xs text-[#1A1A1A]/40 dark:text-[#F0F0F0]/40">Applies instantly, saves on its own.</p>
             </div>
             <button
-              onClick={() => setPrefs({ ...prefs, dark_mode: !prefs.dark_mode })}
+              onClick={handleToggleDarkMode}
               className={`relative h-7 w-12 shrink-0 rounded-full transition-colors ${
                 !prefs.dark_mode ? "bg-[#1A1A1A]/20 dark:bg-[#F0F0F0]/20" : ""
               }`}
