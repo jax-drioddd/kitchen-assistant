@@ -141,6 +141,35 @@ export async function POST(_req: NextRequest) {
       sheet_url: sheetUrl,
     });
 
+    // 8. Add what's being purchased into inventory. Best-effort — if this
+    //    fails, don't fail the whole grocery-list request over it.
+    try {
+      for (const ing of deduped) {
+        const { data: existing } = await supabase
+          .from("inventory")
+          .select("id, quantity")
+          .ilike("item", ing.name)
+          .eq("unit", ing.unit ?? "")
+          .maybeSingle();
+
+        if (existing) {
+          await supabase
+            .from("inventory")
+            .update({
+              quantity: existing.quantity + ing.quantity,
+              last_updated: new Date().toISOString(),
+            })
+            .eq("id", existing.id);
+        } else {
+          await supabase
+            .from("inventory")
+            .insert({ item: ing.name, quantity: ing.quantity, unit: ing.unit ?? "" });
+        }
+      }
+    } catch (invErr) {
+      console.error("Inventory update (grocery purchase) failed, non-fatal:", invErr);
+    }
+
     return NextResponse.json({ sheet_url: sheetUrl, items: deduped });
   } catch (err: any) {
     console.error("grocery-list error:", err);

@@ -135,6 +135,12 @@ export default function TodayView({
           </div>
           <div className="flex items-center gap-2">
             <Link
+              href="/inventory"
+              className="rounded-full bg-white px-4 py-2 text-sm font-semibold text-[#1C1C1E]/50 shadow-sm transition-all hover:text-[#1C1C1E]/70 hover:shadow-md"
+            >
+              🧺 Inventory
+            </Link>
+            <Link
               href="/history"
               className="rounded-full bg-white px-4 py-2 text-sm font-semibold text-[#1C1C1E]/50 shadow-sm transition-all hover:text-[#1C1C1E]/70 hover:shadow-md"
             >

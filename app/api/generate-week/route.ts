@@ -94,11 +94,24 @@ export async function POST(req: NextRequest) {
         .map((h: any) => h.meals?.name)
         .filter(Boolean) ?? [];
 
+    // 2.5. Current inventory, so generation can prefer using what's already
+    //      on hand instead of always planning around fresh purchases.
+    const { data: inventory } = await supabase
+      .from("inventory")
+      .select("item, quantity, unit")
+      .gt("quantity", 0);
+
     // 3. Build the prompt. Structured-JSON-only instruction up front,
     //    preferences and history folded in as concrete constraints rather
     //    than vague guidance, since specific constraints produce better
     //    generations than "please be varied."
-    const prompt = buildWeekPrompt(prefs as Preferences, recentMealNames, lowRatedMeals, requestedDays);
+    const prompt = buildWeekPrompt(
+      prefs as Preferences,
+      recentMealNames,
+      lowRatedMeals,
+      requestedDays,
+      inventory ?? []
+    );
 
     const response = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
@@ -184,8 +197,13 @@ function buildWeekPrompt(
   prefs: Preferences,
   recentMealNames: string[],
   lowRatedMeals: string[],
-  days: string[]
+  days: string[],
+  inventory: { item: string; quantity: number; unit: string }[]
 ): string {
+  const inventoryList = inventory.length > 0
+    ? inventory.map((i) => `${i.quantity} ${i.unit} ${i.item}`).join(", ")
+    : "nothing tracked yet";
+
   return `You are planning dinners for ${prefs.default_servings ?? 2} people for these specific days: ${days.join(", ")}.
 
 Respond with ONLY valid JSON — no markdown fences, no preamble, no explanation.
@@ -214,6 +232,12 @@ Hard constraints:
 - Skill level: ${prefs.skill_level} — instructions should match this level of complexity
 - Cuisine leanings to favor (not exclusive, just weighted toward): ${prefs.cuisine_leanings.join(", ") || "no strong preference"}
 - Assume these pantry staples are always on hand and do NOT include them in ingredients: ${prefs.pantry_staples.join(", ") || "none specified"}
+
+Current kitchen inventory — soft preference, not a hard constraint: ${inventoryList}.
+Where it fits naturally, prefer meals that use up what's already on hand rather
+than always planning around entirely fresh purchases. Don't force an
+inventory item into a meal it doesn't belong in just to use it — this is
+about reducing waste, not a rigid requirement.
 
 Variety constraints (real, not decorative):
 - Do not repeat any of these meals from the last 2 weeks: ${recentMealNames.join(", ") || "none logged yet"}

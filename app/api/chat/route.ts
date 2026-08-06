@@ -63,6 +63,11 @@ export async function POST(req: NextRequest) {
       .select("*")
       .single();
 
+    const { data: inventory } = await supabase
+      .from("inventory")
+      .select("item, quantity, unit")
+      .gt("quantity", 0);
+
     // Build a day -> meal name summary for context (keep it light, not the
     // full ingredient lists, to keep the prompt focused)
     const currentPlanSummary = Object.entries(plan.days)
@@ -73,7 +78,7 @@ export async function POST(req: NextRequest) {
       .join("\n");
 
     // 2. Ask Claude to interpret the request and generate a replacement
-    const prompt = buildChatPrompt(message, currentPlanSummary, prefs as Preferences);
+    const prompt = buildChatPrompt(message, currentPlanSummary, prefs as Preferences, inventory ?? []);
 
     const response = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
@@ -190,8 +195,13 @@ async function findMealPhoto(dishName: string): Promise<string | null> {
 function buildChatPrompt(
   message: string,
   currentPlanSummary: string,
-  prefs: Preferences
+  prefs: Preferences,
+  inventory: { item: string; quantity: number; unit: string }[]
 ): string {
+  const inventoryList = inventory.length > 0
+    ? inventory.map((i) => `${i.quantity} ${i.unit} ${i.item}`).join(", ")
+    : "nothing tracked yet";
+
   return `You are helping someone adjust their weekly meal plan through conversation.
 
 Current plan:
@@ -228,6 +238,7 @@ Hard constraints for the new meal:
 - Skill level: ${prefs?.skill_level ?? "intermediate"}
 - Cuisine leanings to favor (not exclusive, just weighted toward): ${prefs?.cuisine_leanings?.join(", ") || "no strong preference"}
 - Assume these pantry staples are on hand, don't include them in ingredients: ${prefs?.pantry_staples?.join(", ") || "none"}
+- Current kitchen inventory (soft preference, not required): ${inventoryList}. Prefer using it up where it fits naturally, don't force it.
 - Should be genuinely different from what it's replacing — if they said "not chicken," don't substitute another chicken dish
 - Plan quantities for ${prefs?.default_servings ?? 2} servings, matching the rest of the week
 
