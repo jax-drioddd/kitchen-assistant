@@ -48,18 +48,24 @@ interface Meal {
 
 export async function POST(req: NextRequest) {
   try {
-    // Accept an optional list of days to plan from the onboarding form.
-    // Defaults to the full week if none provided (e.g. direct curl testing).
+    // Accept an optional list of days and optional free-text instructions
+    // from the onboarding form (e.g. "chicken Monday, something Indian
+    // Wednesday"). Defaults to the full week / no extra instructions if
+    // none provided (e.g. direct curl testing).
     let requestedDays: string[] = [
       "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday",
     ];
+    let userInstructions = "";
     try {
       const body = await req.json();
       if (Array.isArray(body?.days) && body.days.length > 0) {
         requestedDays = body.days;
       }
+      if (typeof body?.instructions === "string") {
+        userInstructions = body.instructions.trim();
+      }
     } catch {
-      // No body sent (e.g. plain curl -X POST) — fall back to full week, fine.
+      // No body sent (e.g. plain curl -X POST) — fall back to defaults, fine.
     }
 
     // 1. Load preferences (single-row table, no multi-user auth yet)
@@ -110,7 +116,8 @@ export async function POST(req: NextRequest) {
       recentMealNames,
       lowRatedMeals,
       requestedDays,
-      inventory ?? []
+      inventory ?? [],
+      userInstructions
     );
 
     const response = await fetch("https://api.anthropic.com/v1/messages", {
@@ -198,14 +205,27 @@ function buildWeekPrompt(
   recentMealNames: string[],
   lowRatedMeals: string[],
   days: string[],
-  inventory: { item: string; quantity: number; unit: string }[]
+  inventory: { item: string; quantity: number; unit: string }[],
+  userInstructions: string
 ): string {
   const inventoryList = inventory.length > 0
     ? inventory.map((i) => `${i.quantity} ${i.unit} ${i.item}`).join(", ")
     : "nothing tracked yet";
 
-  return `You are planning dinners for ${prefs.default_servings ?? 2} people for these specific days: ${days.join(", ")}.
+  const instructionsBlock = userInstructions
+    ? `\nSpecific instructions for this week from the user — these take priority
+over the general variety/rotation guidance below when they conflict (e.g. if
+they ask for chicken on Monday, use chicken on Monday even if that means
+repeating a protein used elsewhere in the week). These may reference specific
+days by name ("chicken Monday") or be general themes for the whole week
+("keep it light this week") — apply day-specific requests to that exact day,
+and general themes across all days:
+"${userInstructions}"
+`
+    : "";
 
+  return `You are planning dinners for ${prefs.default_servings ?? 2} people for these specific days: ${days.join(", ")}.
+${instructionsBlock}
 Respond with ONLY valid JSON — no markdown fences, no preamble, no explanation.
 The response must be a JSON array of exactly ${days.length} objects, one per day listed
 above (use those exact day names), in this shape:
