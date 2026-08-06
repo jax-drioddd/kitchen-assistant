@@ -3,6 +3,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { categorizeItem, CATEGORY_ORDER } from "../lib/inventory";
 
 interface InventoryItem {
   id: string;
@@ -169,60 +170,73 @@ export default function InventoryPage() {
               as you generate grocery lists and cook meals.
             </p>
           )}
-          <div className="space-y-2">
-            {items.map((item) => (
-              <div
-                key={item.id}
-                className="flex items-center justify-between gap-3 rounded-2xl bg-[#F7F6F2] px-4 py-3"
-              >
-                <span className="flex-1 truncate text-sm font-semibold text-[#1C1C1E]">
-                  {item.item}
-                </span>
-                {editingId === item.id ? (
-                  <>
-                    <input
-                      value={editQty}
-                      onChange={(e) => setEditQty(e.target.value)}
-                      type="number"
-                      autoFocus
-                      className="w-20 rounded-full border-2 border-[#1C1C1E]/20 bg-white px-3 py-1.5 text-sm text-[#1C1C1E] outline-none"
-                    />
-                    <span className="text-sm text-[#1C1C1E]/40">{item.unit}</span>
-                    <button
-                      onClick={() => saveEdit(item)}
-                      className="rounded-full bg-[#5FA88A] px-3 py-1.5 text-xs font-bold text-white"
+
+          {CATEGORY_ORDER.map((category) => {
+            const categoryItems = items.filter((i) => categorizeItem(i.item) === category);
+            if (categoryItems.length === 0) return null;
+
+            return (
+              <div key={category} className="mb-6 last:mb-0">
+                <h3 className="mb-2 text-xs font-bold uppercase tracking-wide text-[#1C1C1E]/40">
+                  {category}
+                </h3>
+                <div className="space-y-2">
+                  {categoryItems.map((item) => (
+                    <div
+                      key={item.id}
+                      className="flex items-center justify-between gap-3 rounded-2xl bg-[#F7F6F2] px-4 py-3"
                     >
-                      Save
-                    </button>
-                    <button
-                      onClick={() => setEditingId(null)}
-                      className="text-xs font-semibold text-[#1C1C1E]/30 hover:text-[#1C1C1E]/60"
-                    >
-                      Cancel
-                    </button>
-                  </>
-                ) : (
-                  <>
-                    <span className="text-sm text-[#1C1C1E]/70">
-                      {item.quantity} {item.unit}
-                    </span>
-                    <button
-                      onClick={() => startEdit(item)}
-                      className="flex items-center gap-1 rounded-full bg-white px-3 py-1.5 text-xs font-semibold text-[#1C1C1E]/60 shadow-sm hover:text-[#1C1C1E]"
-                    >
-                      ✏️ Edit
-                    </button>
-                    <button
-                      onClick={() => handleDelete(item.id)}
-                      className="text-xs font-semibold text-[#1C1C1E]/30 hover:text-[#FF6B5A]"
-                    >
-                      Remove
-                    </button>
-                  </>
-                )}
+                      <span className="flex-1 truncate text-sm font-semibold text-[#1C1C1E]">
+                        {item.item}
+                      </span>
+                      {editingId === item.id ? (
+                        <>
+                          <input
+                            value={editQty}
+                            onChange={(e) => setEditQty(e.target.value)}
+                            type="number"
+                            autoFocus
+                            className="w-20 rounded-full border-2 border-[#1C1C1E]/20 bg-white px-3 py-1.5 text-sm text-[#1C1C1E] outline-none"
+                          />
+                          <span className="text-sm text-[#1C1C1E]/40">{item.unit}</span>
+                          <button
+                            onClick={() => saveEdit(item)}
+                            className="rounded-full bg-[#5FA88A] px-3 py-1.5 text-xs font-bold text-white"
+                          >
+                            Save
+                          </button>
+                          <button
+                            onClick={() => setEditingId(null)}
+                            className="text-xs font-semibold text-[#1C1C1E]/30 hover:text-[#1C1C1E]/60"
+                          >
+                            Cancel
+                          </button>
+                        </>
+                      ) : (
+                        <>
+                          <span className="text-sm text-[#1C1C1E]/70">
+                            {item.quantity} {item.unit}
+                          </span>
+                          <button
+                            onClick={() => startEdit(item)}
+                            className="flex items-center gap-1 rounded-full bg-white px-3 py-1.5 text-xs font-semibold text-[#1C1C1E]/60 shadow-sm hover:text-[#1C1C1E]"
+                          >
+                            ✏️ Edit
+                          </button>
+                          <button
+                            onClick={() => handleDelete(item.id)}
+                            className="text-xs font-semibold text-[#1C1C1E]/30 hover:text-[#FF6B5A]"
+                          >
+                            Remove
+                          </button>
+                        </>
+                      )}
+                    </div>
+                  ))}
+                </div>
               </div>
-            ))}
-          </div>
+            );
+          })}
         </div>
       </div>
     </main>
