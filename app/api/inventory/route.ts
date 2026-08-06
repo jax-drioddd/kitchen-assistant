@@ -5,6 +5,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { convertUnit } from "../../lib/units";
 
 const supabase = createClient(
   process.env.SUPABASE_URL!,
@@ -22,9 +23,11 @@ export async function GET() {
   return NextResponse.json({ items: data ?? [] });
 }
 
-// Manual add — "add stuff to inventory not from AI". If an item with the
-// same name+unit already exists, adds to its quantity rather than creating
-// a duplicate row; otherwise inserts a new one.
+// Manual add — "add stuff to inventory not from AI". Matches existing items
+// by name, converting units when possible (e.g. adding "2 tbsp" to an
+// existing "0.25 cup" row merges into one, rather than creating a separate
+// row just because the unit string differs) rather than requiring an exact
+// unit match.
 export async function POST(req: NextRequest) {
   try {
     const { item, quantity, unit } = await req.json();
@@ -32,17 +35,20 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "item and quantity are required" }, { status: 400 });
     }
 
-    const { data: existing } = await supabase
+    const { data: candidates } = await supabase
       .from("inventory")
-      .select("id, quantity")
-      .ilike("item", item)
-      .eq("unit", unit ?? "")
-      .maybeSingle();
+      .select("id, quantity, unit")
+      .ilike("item", item);
+
+    const existing = candidates?.find(
+      (c) => convertUnit(1, unit ?? "", c.unit) !== null
+    );
 
     if (existing) {
+      const converted = convertUnit(Number(quantity), unit ?? "", existing.unit) ?? Number(quantity);
       const { error } = await supabase
         .from("inventory")
-        .update({ quantity: existing.quantity + Number(quantity), last_updated: new Date().toISOString() })
+        .update({ quantity: existing.quantity + converted, last_updated: new Date().toISOString() })
         .eq("id", existing.id);
       if (error) throw new Error(error.message);
     } else {

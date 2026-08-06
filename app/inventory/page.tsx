@@ -208,7 +208,7 @@ export default function InventoryPage() {
                       ) : (
                         <>
                           <span className="text-sm text-[#1C1C1E]/70">
-                            {item.quantity} {item.unit}
+                            {Math.round(item.quantity * 100) / 100} {item.unit}
                           </span>
                           <button
                             onClick={() => startEdit(item)}

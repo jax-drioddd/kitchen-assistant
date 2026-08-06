@@ -7,6 +7,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { google } from "googleapis";
+import { convertUnit } from "../../lib/units";
 
 const supabase = createClient(
   process.env.SUPABASE_URL!,
@@ -142,21 +143,25 @@ export async function POST(_req: NextRequest) {
     });
 
     // 8. Add what's being purchased into inventory. Best-effort — if this
-    //    fails, don't fail the whole grocery-list request over it.
+    //    fails, don't fail the whole grocery-list request over it. Matches
+    //    existing rows by name with unit conversion, same as manual add.
     try {
       for (const ing of deduped) {
-        const { data: existing } = await supabase
+        const { data: candidates } = await supabase
           .from("inventory")
-          .select("id, quantity")
-          .ilike("item", ing.name)
-          .eq("unit", ing.unit ?? "")
-          .maybeSingle();
+          .select("id, quantity, unit")
+          .ilike("item", ing.name);
+
+        const existing = candidates?.find(
+          (c) => convertUnit(1, ing.unit ?? "", c.unit) !== null
+        );
 
         if (existing) {
+          const converted = convertUnit(ing.quantity, ing.unit ?? "", existing.unit) ?? ing.quantity;
           await supabase
             .from("inventory")
             .update({
-              quantity: existing.quantity + ing.quantity,
+              quantity: existing.quantity + converted,
               last_updated: new Date().toISOString(),
             })
             .eq("id", existing.id);
