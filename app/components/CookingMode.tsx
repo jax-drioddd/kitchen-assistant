@@ -172,7 +172,7 @@ export default function CookingMode({
           return (
             <div
               key={paneIdx}
-              className={`flex flex-1 flex-col items-center justify-between overflow-y-auto px-5 py-5 text-center ${
+              className={`flex flex-1 flex-col items-center justify-center gap-10 overflow-y-auto px-5 py-5 text-center ${
                 split && paneIdx === 0 ? "border-r border-[#1A1A1A]/8" : ""
               }`}
             >
