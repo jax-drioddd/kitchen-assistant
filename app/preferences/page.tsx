@@ -258,16 +258,13 @@ export default function PreferencesPage() {
             </div>
             <button
               onClick={handleToggleDarkMode}
-              className={`relative h-7 w-12 shrink-0 rounded-full transition-colors ${
-                !prefs.dark_mode ? "bg-[#1A1A1A]/20 dark:bg-[#F0F0F0]/20" : ""
-              }`}
+              className={`flex h-7 w-12 shrink-0 items-center rounded-full p-0.5 transition-colors ${
+                prefs.dark_mode ? "justify-end" : "justify-start"
+              } ${!prefs.dark_mode ? "bg-[#1A1A1A]/20 dark:bg-[#F0F0F0]/20" : ""}`}
               style={prefs.dark_mode ? { backgroundColor: ACCENT } : undefined}
               aria-label="Toggle dark mode"
             >
-              <span
-                className="absolute top-0.5 h-6 w-6 rounded-full bg-white shadow-sm transition-transform"
-                style={{ transform: prefs.dark_mode ? "translateX(22px)" : "translateX(2px)" }}
-              />
+              <span className="h-6 w-6 rounded-full bg-white shadow-sm transition-all" />
             </button>
           </div>
         </div>
