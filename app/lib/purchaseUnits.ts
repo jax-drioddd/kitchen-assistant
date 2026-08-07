@@ -82,7 +82,7 @@ Respond with ONLY valid JSON, no markdown fences, no preamble:
   "needs_purchase_unit": boolean,
   "purchase_unit_label": "string or null - e.g. 'bunch', '16 fl oz bottle', 'head', 'jar' - null if needs_purchase_unit is false",
   "purchase_unit_quantity": number or null - how many of the recipe unit below one purchase unit typically contains,
-  "purchase_unit_recipe_unit": "string or null - the unit the quantity above is expressed in, usually the same as the recipe's unit"
+  "purchase_unit_recipe_unit": "string or null - a SHORT unit token only: tsp, tbsp, cup, fl oz, lb, oz, g, kg, ml, l, or \"count\" for whole/countable items. Never a descriptive phrase like \"count (whole items)\" - just the bare word."
 }
 
 Use your best real-world knowledge of typical grocery store package sizes.
