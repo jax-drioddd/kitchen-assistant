@@ -266,7 +266,7 @@ export default function Dashboard({ initialWeek }: { initialWeek: DayEntry[] | n
                           {meal.tags?.[0] && <span>🏷 {meal.tags[0]}</span>}
                           {matchCount > 0 && (
                             <span style={{ color: ACCENT }}>
-                              ✓ Uses {matchCount} thing{matchCount === 1 ? "" : "s"} you have
+                              ✓ Uses {matchCount}/{meal.ingredients.length} things you have
                             </span>
                           )}
                         </div>
