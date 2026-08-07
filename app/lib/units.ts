@@ -30,15 +30,23 @@ const WEIGHT_IN_GRAMS: Record<string, number> = {
 // Countable-item units are inherently synonyms of each other — "2 eggs"
 // with unit "" and "2 eggs" with unit "count" mean exactly the same
 // thing, but different Claude generations don't always pick the same
-// literal word for it. Normalizing these together before comparing is
-// what makes inventory merging and sufficiency checks actually work
-// across generations, instead of silently treating them as different
-// items just because the unit string differs.
-const COUNTABLE_SYNONYMS = new Set(["", "count", "ea", "each", "whole", "unit", "units", "item", "items"]);
+// literal word for it — or even the same *format*: "count (whole items)"
+// showed up from a purchase-unit estimate, which no fixed word list would
+// catch. Normalizing these together before comparing is what makes
+// inventory merging and sufficiency checks actually work across
+// generations, instead of silently treating them as different items just
+// because the unit string differs.
+const COUNTABLE_WORDS = ["count", "ea", "each", "whole", "unit", "units", "item", "items", "piece", "pieces"];
 
 function normalize(unit: string): string {
   const trimmed = unit.trim().toLowerCase();
-  return COUNTABLE_SYNONYMS.has(trimmed) ? "" : trimmed;
+  if (trimmed === "") return "";
+  // Matches the countable word at the start of the string, so verbose
+  // phrasing like "count (whole items)" or "each (approx)" still
+  // normalizes correctly — not just an exact match against a fixed list.
+  const firstWord = trimmed.split(/[\s(]/)[0];
+  if (COUNTABLE_WORDS.includes(firstWord)) return "";
+  return trimmed;
 }
 
 function unitFamily(unit: string): "volume" | "weight" | null {
