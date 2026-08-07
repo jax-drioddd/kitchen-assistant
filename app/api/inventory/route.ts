@@ -20,7 +20,29 @@ export async function GET() {
     .order("item", { ascending: true });
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-  return NextResponse.json({ items: data ?? [] });
+
+  const items = data ?? [];
+
+  // Attach a friendly purchase-unit fraction where we have one on record
+  // (e.g. "3 tbsp" also shown as "¾ bunch") — read-only lookup, doesn't
+  // trigger a new estimate for items that have never been through the
+  // grocery list (e.g. added manually).
+  const itemNames = items.map((i) => i.item.toLowerCase().trim());
+  const { data: purchaseUnits } = itemNames.length
+    ? await supabase.from("ingredient_purchase_units").select("*").in("ingredient_name", itemNames)
+    : { data: [] };
+
+  const withDisplay = items.map((item) => {
+    const info = purchaseUnits?.find((p) => p.ingredient_name === item.item.toLowerCase().trim());
+    if (!info || !info.needs_purchase_unit || !info.purchase_unit_quantity) {
+      return { ...item, purchase_fraction: null };
+    }
+    const fraction = item.quantity / info.purchase_unit_quantity;
+    const rounded = Math.round(fraction * 4) / 4; // nearest quarter, readable without being falsely precise
+    return { ...item, purchase_fraction: `${rounded} ${info.purchase_unit_label}` };
+  });
+
+  return NextResponse.json({ items: withDisplay });
 }
 
 // Manual add — "add stuff to inventory not from AI". Matches existing items

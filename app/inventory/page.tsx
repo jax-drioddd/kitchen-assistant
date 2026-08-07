@@ -10,6 +10,7 @@ interface InventoryItem {
   quantity: number;
   unit: string;
   last_updated: string;
+  purchase_fraction: string | null;
 }
 
 const ACCENT = "#E8674A";
@@ -187,6 +188,11 @@ export default function InventoryPage() {
                         <>
                           <span className="text-sm text-[#1A1A1A]/60 dark:text-[#F0F0F0]/60">
                             {Math.round(item.quantity * 100) / 100} {item.unit}
+                            {item.purchase_fraction && (
+                              <span className="ml-1 text-[#1A1A1A]/35 dark:text-[#F0F0F0]/35">
+                                ({item.purchase_fraction})
+                              </span>
+                            )}
                           </span>
                           <button onClick={() => startEdit(item)} className="text-xs font-semibold text-[#1A1A1A]/40 dark:text-[#F0F0F0]/40 hover:text-[#1A1A1A] dark:hover:text-[#F0F0F0]">
                             Edit
