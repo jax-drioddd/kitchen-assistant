@@ -287,6 +287,11 @@ export default function TodayView({
                             ⚠ not enough
                           </span>
                         )}
+                        {status === "uncertain" && (
+                          <span className="ml-1.5 text-xs font-bold text-amber-600" title="Tracked in a different unit — can't verify the amount, worth a quick check">
+                            ⚠ check amount
+                          </span>
+                        )}
                       </li>
                     );
                   })}

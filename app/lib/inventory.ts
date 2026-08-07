@@ -92,7 +92,7 @@ export interface InventoryQty {
   unit: string;
 }
 
-export type SufficiencyStatus = "sufficient" | "insufficient" | "not_tracked";
+export type SufficiencyStatus = "sufficient" | "insufficient" | "uncertain" | "not_tracked";
 
 export function checkSufficiency(
   neededQuantity: number,
@@ -104,11 +104,14 @@ export function checkSufficiency(
   const converted = convertUnit(inventoryEntry.quantity, inventoryEntry.unit, neededUnit);
 
   if (converted === null) {
-    // Units aren't in the same convertible family (or one side is an
-    // unrecognized unit) — can't compare precisely. Falls back to treating
-    // presence as a loose match rather than blocking the badge on a
-    // comparison we can't actually make correctly.
-    return "sufficient";
+    // Units aren't in the same convertible family — often a labeling
+    // mismatch rather than a real difference (e.g. bacon credited to
+    // inventory as "slices" from a purchase-unit estimate, while a recipe
+    // measures it as a plain count). Can't verify sufficiency either way,
+    // so this should not claim a checkmark it can't back up — better to
+    // flag it for a manual look than silently show a false "you have
+    // enough."
+    return "uncertain";
   }
 
   return converted >= neededQuantity ? "sufficient" : "insufficient";
