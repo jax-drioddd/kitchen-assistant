@@ -13,29 +13,35 @@
 // re-permissioned, etc.), just re-run this script to mint a fresh context.
 //
 // Usage:
-//   BROWSERBASE_API_KEY=... BROWSERBASE_PROJECT_ID=... node scripts/setup-browserbase-context.mjs
+//   BROWSERBASE_API_KEY=... node scripts/setup-browserbase-context.mjs
+//
+// BROWSERBASE_PROJECT_ID is optional — Browserbase infers the project from
+// the API key if it's not set, which is all the current onboarding flow
+// actually hands you (no separate project ID shown). Set it explicitly
+// only if your account has multiple projects and the inferred default
+// isn't the one you want.
 //
 // Prints a BROWSERBASE_CONTEXT_ID at the end — save that as an env var
-// (.env.local and Vercel) alongside BROWSERBASE_API_KEY/PROJECT_ID.
+// (.env.local and Vercel) alongside BROWSERBASE_API_KEY.
 
 import Browserbase from "@browserbasehq/sdk";
 import readline from "node:readline/promises";
 
 const apiKey = process.env.BROWSERBASE_API_KEY;
-const projectId = process.env.BROWSERBASE_PROJECT_ID;
+const projectId = process.env.BROWSERBASE_PROJECT_ID; // may be undefined — that's fine
 
-if (!apiKey || !projectId) {
-  console.error("Set BROWSERBASE_API_KEY and BROWSERBASE_PROJECT_ID first.");
+if (!apiKey) {
+  console.error("Set BROWSERBASE_API_KEY first.");
   process.exit(1);
 }
 
 const bb = new Browserbase({ apiKey });
 
-const context = await bb.contexts.create({ projectId });
+const context = await bb.contexts.create(projectId ? { projectId } : {});
 console.log(`Created Browserbase context: ${context.id}`);
 
 const session = await bb.sessions.create({
-  projectId,
+  ...(projectId ? { projectId } : {}),
   browserSettings: { context: { id: context.id, persist: true } },
   keepAlive: true,
   timeout: 900, // give yourself up to 15 minutes to do this by hand
@@ -55,7 +61,7 @@ const rl = readline.createInterface({ input: process.stdin, output: process.stdo
 await rl.question("Press Enter once you've logged in and authorized the add-on... ");
 rl.close();
 
-await bb.sessions.update(session.id, { projectId, status: "REQUEST_RELEASE" });
+await bb.sessions.update(session.id, { ...(projectId ? { projectId } : {}), status: "REQUEST_RELEASE" });
 
 console.log("\nDone. Save these as env vars (.env.local + Vercel):\n");
 console.log(`BROWSERBASE_CONTEXT_ID=${context.id}`);

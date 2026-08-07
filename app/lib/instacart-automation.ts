@@ -33,12 +33,14 @@ export async function openInstacartCart(
   sheetUrl: string
 ): Promise<InstacartAutomationResult> {
   const apiKey = process.env.BROWSERBASE_API_KEY;
+  // Optional — Browserbase infers the project from the API key if this
+  // isn't set, which is all the current onboarding flow actually hands you.
   const projectId = process.env.BROWSERBASE_PROJECT_ID;
   const contextId = process.env.BROWSERBASE_CONTEXT_ID;
 
-  if (!apiKey || !projectId || !contextId) {
+  if (!apiKey || !contextId) {
     throw new Error(
-      "Missing BROWSERBASE_API_KEY, BROWSERBASE_PROJECT_ID, or BROWSERBASE_CONTEXT_ID. " +
+      "Missing BROWSERBASE_API_KEY or BROWSERBASE_CONTEXT_ID. " +
         "Run scripts/setup-browserbase-context.mjs once to create the authenticated context."
     );
   }
@@ -46,7 +48,7 @@ export async function openInstacartCart(
   const bb = new Browserbase({ apiKey });
 
   const session = await bb.sessions.create({
-    projectId,
+    ...(projectId ? { projectId } : {}),
     browserSettings: {
       context: { id: contextId, persist: true },
     },
@@ -67,7 +69,7 @@ export async function openInstacartCart(
   } finally {
     await browser.close().catch(() => {});
     await bb.sessions
-      .update(session.id, { projectId, status: "REQUEST_RELEASE" })
+      .update(session.id, { ...(projectId ? { projectId } : {}), status: "REQUEST_RELEASE" })
       .catch(() => {});
   }
 }

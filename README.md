@@ -95,7 +95,9 @@ BROWSERBASE_PROJECT_ID=
 BROWSERBASE_CONTEXT_ID=
 ```
 
-`BROWSERBASE_CONTEXT_ID` comes from running
+`BROWSERBASE_PROJECT_ID` is optional — Browserbase infers the project from
+the API key if it's unset, which is all the current onboarding flow
+actually gives you. `BROWSERBASE_CONTEXT_ID` comes from running
 `pnpm setup:browserbase-context` once (see above) — it doesn't exist until
 you do.
 
