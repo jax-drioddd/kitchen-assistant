@@ -303,11 +303,18 @@ export default function TodayView({
                   </div>
                 </div>
               ) : (
-                <div className="flex flex-wrap gap-4 text-sm font-semibold text-[#1A1A1A]/50 dark:text-[#F0F0F0]/50">
-                  <button onClick={() => handleMarkStatus(entry.meal.id, "cooked")} className="hover:text-[#1A1A1A] dark:hover:text-[#F0F0F0]">
+                <div className="flex flex-wrap gap-3">
+                  <button
+                    onClick={() => handleMarkStatus(entry.meal.id, "cooked")}
+                    className="rounded-full px-6 py-3 text-sm font-bold text-white transition-opacity hover:opacity-90"
+                    style={{ backgroundColor: ACCENT }}
+                  >
                     ✅ Finished cooking
                   </button>
-                  <button onClick={() => handleMarkStatus(entry.meal.id, "skipped")} className="hover:text-[#1A1A1A] dark:hover:text-[#F0F0F0]">
+                  <button
+                    onClick={() => handleMarkStatus(entry.meal.id, "skipped")}
+                    className="rounded-full border border-[#1A1A1A]/15 dark:border-[#F0F0F0]/15 px-6 py-3 text-sm font-bold text-[#1A1A1A] dark:text-[#F0F0F0] transition-colors hover:border-[#1A1A1A]/30 dark:hover:border-[#F0F0F0]/30"
+                  >
                     ⏭️ Skipped it
                   </button>
                 </div>
