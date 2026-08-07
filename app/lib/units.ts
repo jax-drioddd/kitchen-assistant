@@ -27,8 +27,18 @@ const WEIGHT_IN_GRAMS: Record<string, number> = {
   lb: 453.592,
 };
 
+// Countable-item units are inherently synonyms of each other — "2 eggs"
+// with unit "" and "2 eggs" with unit "count" mean exactly the same
+// thing, but different Claude generations don't always pick the same
+// literal word for it. Normalizing these together before comparing is
+// what makes inventory merging and sufficiency checks actually work
+// across generations, instead of silently treating them as different
+// items just because the unit string differs.
+const COUNTABLE_SYNONYMS = new Set(["", "count", "ea", "each", "whole", "unit", "units", "item", "items"]);
+
 function normalize(unit: string): string {
-  return unit.trim().toLowerCase();
+  const trimmed = unit.trim().toLowerCase();
+  return COUNTABLE_SYNONYMS.has(trimmed) ? "" : trimmed;
 }
 
 function unitFamily(unit: string): "volume" | "weight" | null {
@@ -40,8 +50,9 @@ function unitFamily(unit: string): "volume" | "weight" | null {
 
 // Converts a quantity from one unit to another. Returns null if the units
 // aren't in the same family (e.g. can't convert cups to grams without
-// knowing the specific ingredient's density) or either unit is unknown
-// (e.g. countable items with no unit — those just have to match exactly).
+// knowing the specific ingredient's density) or either unit is unknown.
+// Countable synonyms (see above) are normalized to the same value first,
+// so those always compare equal regardless of which literal word was used.
 export function convertUnit(quantity: number, fromUnit: string, toUnit: string): number | null {
   const from = normalize(fromUnit);
   const to = normalize(toUnit);
