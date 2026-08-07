@@ -11,6 +11,10 @@ interface Ingredient {
   unit: string;
 }
 
+interface ShoppingItem extends Ingredient {
+  purchase_display?: string;
+}
+
 interface Meal {
   id?: string;
   day: string;
@@ -41,7 +45,7 @@ export default function Dashboard({ initialWeek }: { initialWeek: DayEntry[] | n
   const [generating, setGenerating] = useState(false);
   const [groceryLoading, setGroceryLoading] = useState(false);
   const [groceryUrl, setGroceryUrl] = useState<string | null>(null);
-  const [groceryItems, setGroceryItems] = useState<Ingredient[] | null>(null);
+  const [groceryItems, setGroceryItems] = useState<ShoppingItem[] | null>(null);
   const [copied, setCopied] = useState(false);
   const [chatInput, setChatInput] = useState("");
   const [chatMessages, setChatMessages] = useState<
@@ -109,7 +113,7 @@ export default function Dashboard({ initialWeek }: { initialWeek: DayEntry[] | n
   function groceryListAsText(): string {
     if (!groceryItems) return "";
     return groceryItems
-      .map((ing) => `${ing.quantity} ${ing.unit} ${ing.name}`.replace(/\s+/g, " ").trim())
+      .map((ing) => ing.purchase_display ?? `${ing.quantity} ${ing.unit} ${ing.name}`.replace(/\s+/g, " ").trim())
       .join("\n");
   }
 
@@ -387,7 +391,13 @@ export default function Dashboard({ initialWeek }: { initialWeek: DayEntry[] | n
             <ul className="mb-5 columns-1 gap-x-8 text-sm text-[#1A1A1A]/80 dark:text-[#F0F0F0]/80 sm:columns-2">
               {groceryItems.map((ing, i) => (
                 <li key={i} className="mb-1.5 break-inside-avoid">
-                  <span className="font-bold text-[#1A1A1A] dark:text-[#F0F0F0]">{ing.quantity} {ing.unit}</span> {ing.name}
+                  {ing.purchase_display ? (
+                    ing.purchase_display
+                  ) : (
+                    <>
+                      <span className="font-bold text-[#1A1A1A] dark:text-[#F0F0F0]">{ing.quantity} {ing.unit}</span> {ing.name}
+                    </>
+                  )}
                 </li>
               ))}
             </ul>

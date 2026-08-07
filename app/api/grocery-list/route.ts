@@ -1,13 +1,17 @@
 // app/api/grocery-list/route.ts
 //
 // Pulls the current week's meals, dedupes ingredients across all 7 days,
-// filters out pantry staples, writes the result to a new Google Sheet,
-// shares it with your account, and saves the URL.
+// filters out pantry staples, converts recipe quantities into real
+// purchasable amounts (you can't buy "1 tbsp fresh dill", you buy "1
+// bunch" — see app/lib/purchaseUnits.ts), writes the result to a Google
+// Sheet, and credits inventory with the full purchase amount so leftover
+// stock is tracked for future weeks.
 
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { google } from "googleapis";
 import { convertUnit } from "../../lib/units";
+import { getOrEstimatePurchaseUnit, computePurchaseQuantity } from "../../lib/purchaseUnits";
 
 const supabase = createClient(
   process.env.SUPABASE_URL!,
@@ -25,6 +29,12 @@ interface Meal {
   ingredients: Ingredient[];
 }
 
+interface ShoppingItem extends Ingredient {
+  purchase_display: string; // what to actually search for / buy
+  inventory_credit_quantity: number; // what gets added to inventory (may exceed what the recipe needed)
+  inventory_credit_unit: string;
+}
+
 function getMonday(d: Date): string {
   const date = new Date(d);
   const day = date.getDay();
@@ -33,17 +43,14 @@ function getMonday(d: Date): string {
   return date.toISOString().slice(0, 10);
 }
 
-function dedupeIngredients(
-  meals: Meal[],
-  pantryStaples: string[]
-): Ingredient[] {
+function dedupeIngredients(meals: Meal[], pantryStaples: string[]): Ingredient[] {
   const staplesSet = new Set(pantryStaples.map((s) => s.toLowerCase().trim()));
   const combined = new Map<string, Ingredient>();
 
   for (const meal of meals) {
     for (const ing of meal.ingredients) {
       const nameKey = ing.name.toLowerCase().trim();
-      if (staplesSet.has(nameKey)) continue; // skip assumed pantry staples
+      if (staplesSet.has(nameKey)) continue;
 
       const key = `${nameKey}|${ing.unit}`;
       if (combined.has(key)) {
@@ -54,14 +61,45 @@ function dedupeIngredients(
     }
   }
 
-  return Array.from(combined.values()).sort((a, b) =>
-    a.name.localeCompare(b.name)
+  return Array.from(combined.values()).sort((a, b) => a.name.localeCompare(b.name));
+}
+
+// Converts deduped recipe quantities into real purchasable amounts. Runs
+// the (possibly-cached) purchase-unit lookup for every ingredient in
+// parallel, since these are independent per-ingredient and sequential
+// calls would make grocery-list generation noticeably slower.
+async function buildShoppingList(deduped: Ingredient[]): Promise<ShoppingItem[]> {
+  return Promise.all(
+    deduped.map(async (ing): Promise<ShoppingItem> => {
+      const info = await getOrEstimatePurchaseUnit(ing.name, ing.unit);
+      const purchase = computePurchaseQuantity(ing.quantity, ing.unit, info);
+
+      if (!purchase) {
+        // Already a real purchase unit (lb, oz, or a countable whole item) —
+        // no conversion needed, use the recipe quantity as-is.
+        const qtyStr = ing.unit ? `${ing.quantity} ${ing.unit}` : `${ing.quantity}`;
+        return {
+          ...ing,
+          purchase_display: `${qtyStr} ${ing.name}`,
+          inventory_credit_quantity: ing.quantity,
+          inventory_credit_unit: ing.unit,
+        };
+      }
+
+      const unitLabel = info.label ?? "unit";
+      const plural = purchase.purchaseUnitsToBuy === 1 ? unitLabel : `${unitLabel}s`;
+      return {
+        ...ing,
+        purchase_display: `${purchase.purchaseUnitsToBuy} ${plural} ${ing.name}`,
+        inventory_credit_quantity: purchase.recipeEquivalentBought,
+        inventory_credit_unit: purchase.recipeEquivalentUnit,
+      };
+    })
   );
 }
 
 export async function POST(_req: NextRequest) {
   try {
-    // 1. Get current week's meals
     const weekStart = getMonday(new Date());
     const { data: plan } = await supabase
       .from("weekly_plans")
@@ -86,19 +124,15 @@ export async function POST(_req: NextRequest) {
       return NextResponse.json({ error: "No meals found for this week." }, { status: 400 });
     }
 
-    // 2. Get pantry staples to exclude
     const { data: prefs } = await supabase
       .from("preferences")
       .select("pantry_staples")
       .single();
 
     const deduped = dedupeIngredients(meals as Meal[], prefs?.pantry_staples ?? []);
+    const shoppingList = await buildShoppingList(deduped);
 
-    // 3. Auth with Google — reads credentials from an env var (works both
-    //    locally and on Vercel) rather than a local file. Vercel's servers
-    //    don't have access to google-credentials.json since it's gitignored
-    //    and never uploaded; the file's full JSON contents are stored as
-    //    GOOGLE_CREDENTIALS_JSON instead.
+    // Auth with Google
     const auth = new google.auth.GoogleAuth({
       credentials: JSON.parse(process.env.GOOGLE_CREDENTIALS_JSON!),
       scopes: ["https://www.googleapis.com/auth/spreadsheets"],
@@ -107,24 +141,15 @@ export async function POST(_req: NextRequest) {
     const sheets = google.sheets({ version: "v4", auth });
     const spreadsheetId = process.env.GOOGLE_SHEET_ID!;
 
-    // 4. Clear the sheet, then write the deduped list — one item per row,
-    //    formatted for the Grocery Shopper add-on's paste/highlight flow.
-    //    We write to a pre-existing sheet (shared with the service account
-    //    as editor) rather than creating a new one each time, since service
-    //    accounts on personal Google accounts have no Drive storage quota
-    //    and can't create new files.
     await sheets.spreadsheets.values.clear({
       spreadsheetId,
       range: "A1:Z1000",
     });
 
-    const rows = [
-      ["Item"],
-      ...deduped.map((ing) => {
-        const qty = ing.unit ? `${ing.quantity} ${ing.unit}` : `${ing.quantity}`;
-        return [`${qty} ${ing.name}`];
-      }),
-    ];
+    // Uses purchase_display, not raw recipe quantities — "1 bunch fresh
+    // dill", not "1 tbsp fresh dill". This is what someone would actually
+    // search for and buy.
+    const rows = [["Item"], ...shoppingList.map((item) => [item.purchase_display])];
 
     await sheets.spreadsheets.values.update({
       spreadsheetId,
@@ -135,29 +160,31 @@ export async function POST(_req: NextRequest) {
 
     const sheetUrl = `https://docs.google.com/spreadsheets/d/${spreadsheetId}/edit`;
 
-    // 5. Save the URL
     await supabase.from("grocery_lists").upsert({
       week_start: weekStart,
       deduped_items: deduped,
       sheet_url: sheetUrl,
     });
 
-    // 8. Add what's being purchased into inventory. Best-effort — if this
-    //    fails, don't fail the whole grocery-list request over it. Matches
-    //    existing rows by name with unit conversion, same as manual add.
+    // Credit inventory with the full purchase amount, not just what the
+    // recipe needed — buying a whole bunch of dill for a 1-tbsp need
+    // leaves real leftover stock, and inventory should reflect that so
+    // future weeks can actually reuse it.
     try {
-      for (const ing of deduped) {
+      for (const item of shoppingList) {
         const { data: candidates } = await supabase
           .from("inventory")
           .select("id, quantity, unit")
-          .ilike("item", ing.name);
+          .ilike("item", item.name);
 
         const existing = candidates?.find(
-          (c) => convertUnit(1, ing.unit ?? "", c.unit) !== null
+          (c) => convertUnit(1, item.inventory_credit_unit ?? "", c.unit) !== null
         );
 
         if (existing) {
-          const converted = convertUnit(ing.quantity, ing.unit ?? "", existing.unit) ?? ing.quantity;
+          const converted =
+            convertUnit(item.inventory_credit_quantity, item.inventory_credit_unit ?? "", existing.unit) ??
+            item.inventory_credit_quantity;
           await supabase
             .from("inventory")
             .update({
@@ -166,16 +193,18 @@ export async function POST(_req: NextRequest) {
             })
             .eq("id", existing.id);
         } else {
-          await supabase
-            .from("inventory")
-            .insert({ item: ing.name, quantity: ing.quantity, unit: ing.unit ?? "" });
+          await supabase.from("inventory").insert({
+            item: item.name,
+            quantity: item.inventory_credit_quantity,
+            unit: item.inventory_credit_unit ?? "",
+          });
         }
       }
     } catch (invErr) {
       console.error("Inventory update (grocery purchase) failed, non-fatal:", invErr);
     }
 
-    return NextResponse.json({ sheet_url: sheetUrl, items: deduped });
+    return NextResponse.json({ sheet_url: sheetUrl, items: shoppingList });
   } catch (err: any) {
     console.error("grocery-list error:", err);
     return NextResponse.json({ error: err.message ?? "Unknown error" }, { status: 500 });
