@@ -305,6 +305,9 @@ export default function Dashboard({ initialWeek }: { initialWeek: DayEntry[] | n
                                 {status === "insufficient" && (
                                   <span className="ml-1.5 text-xs font-bold text-amber-600">⚠ not enough</span>
                                 )}
+                                {status === "uncertain" && (
+                                  <span className="ml-1.5 text-xs font-bold text-amber-600" title="Tracked in a different unit — can't verify the amount">⚠ check amount</span>
+                                )}
                               </li>
                             );
                           })}
