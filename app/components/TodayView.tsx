@@ -50,7 +50,16 @@ export default function TodayView({
     week?.find((d) => d.day === todayName)?.day ?? week?.[0]?.day ?? null;
   const [selectedDay, setSelectedDay] = useState<string | null>(defaultDay);
   const [ratedMeals, setRatedMeals] = useState<Record<string, "cooked" | "skipped">>({});
-  const [cookedPendingRating, setCookedPendingRating] = useState<Record<string, string>>({});
+  // Tracked as two separate pieces of state on purpose: cookedMealIds drives
+  // whether the UI shows the rating stage (always true after a successful
+  // call), while historyIdByMeal holds the id needed for the follow-up
+  // rating update, which can legitimately be null. Keeping the UI
+  // transition tied only to a Set membership check — instead of a truthy
+  // check on a value that could come back null — means a missing history_id
+  // can't silently leave the original buttons stuck on screen.
+  const [cookedMealIds, setCookedMealIds] = useState<Set<string>>(new Set());
+  const [historyIdByMeal, setHistoryIdByMeal] = useState<Record<string, string | null>>({});
+  const [markingStatus, setMarkingStatus] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [cookingMode, setCookingMode] = useState(false);
   const [servingsOverride, setServingsOverride] = useState<Record<string, number>>({});
@@ -67,29 +76,37 @@ export default function TodayView({
   }, []);
 
   async function handleMarkStatus(mealId: string | undefined, status: "cooked" | "skipped") {
-    if (!mealId) return;
+    if (!mealId || markingStatus) return; // guard against rapid re-clicks firing multiple requests
+    setMarkingStatus(true);
+    setError(null);
     try {
       const res = await fetch("/api/meal-feedback", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ meal_id: mealId, status, rating: null }),
       });
+      if (!res.ok) throw new Error("Request failed");
       const data = await res.json();
       if (status === "skipped") {
         setRatedMeals((prev) => ({ ...prev, [mealId]: "skipped" }));
       } else {
         // Cooked, but not rated yet — inventory already depleted server-side.
-        // Move to the second stage (rating) instead of marking fully done.
-        setCookedPendingRating((prev) => ({ ...prev, [mealId]: data.history_id }));
+        // The UI transition depends only on this Set membership, not on
+        // history_id being truthy, so a null id can't leave the original
+        // buttons stuck on screen.
+        setCookedMealIds((prev) => new Set(prev).add(mealId));
+        setHistoryIdByMeal((prev) => ({ ...prev, [mealId]: data.history_id ?? null }));
       }
     } catch {
       setError("Couldn't save that. Try again.");
+    } finally {
+      setMarkingStatus(false);
     }
   }
 
   async function handleRate(mealId: string | undefined, rating: number | null) {
     if (!mealId) return;
-    const historyId = cookedPendingRating[mealId];
+    const historyId = historyIdByMeal[mealId];
     try {
       if (historyId) {
         await fetch("/api/meal-feedback", {
@@ -285,7 +302,7 @@ export default function TodayView({
                     ? "Marked as skipped — won't suggest this again soon."
                     : "Thanks — noted for next time."}
                 </p>
-              ) : entry.meal.id && cookedPendingRating[entry.meal.id] ? (
+              ) : entry.meal.id && cookedMealIds.has(entry.meal.id) ? (
                 <div>
                   <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-[#1A1A1A]/40 dark:text-[#F0F0F0]/40">
                     How was it?
@@ -306,14 +323,16 @@ export default function TodayView({
                 <div className="flex flex-wrap gap-3">
                   <button
                     onClick={() => handleMarkStatus(entry.meal.id, "cooked")}
-                    className="rounded-full px-6 py-3 text-sm font-bold text-white transition-opacity hover:opacity-90"
+                    disabled={markingStatus}
+                    className="rounded-full px-6 py-3 text-sm font-bold text-white transition-opacity hover:opacity-90 disabled:opacity-50"
                     style={{ backgroundColor: ACCENT }}
                   >
-                    ✅ Finished cooking
+                    {markingStatus ? "Saving…" : "✅ Finished cooking"}
                   </button>
                   <button
                     onClick={() => handleMarkStatus(entry.meal.id, "skipped")}
-                    className="rounded-full border border-[#1A1A1A]/15 dark:border-[#F0F0F0]/15 px-6 py-3 text-sm font-bold text-[#1A1A1A] dark:text-[#F0F0F0] transition-colors hover:border-[#1A1A1A]/30 dark:hover:border-[#F0F0F0]/30"
+                    disabled={markingStatus}
+                    className="rounded-full border border-[#1A1A1A]/15 dark:border-[#F0F0F0]/15 px-6 py-3 text-sm font-bold text-[#1A1A1A] dark:text-[#F0F0F0] transition-colors hover:border-[#1A1A1A]/30 dark:hover:border-[#F0F0F0]/30 disabled:opacity-50"
                   >
                     ⏭️ Skipped it
                   </button>
