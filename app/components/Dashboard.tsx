@@ -3,6 +3,7 @@
 
 import { useEffect, useState } from "react";
 import { normalizeSteps, renderStepContent } from "../lib/steps";
+import { checkSufficiency, InventoryQty } from "../lib/inventory";
 
 interface Ingredient {
   id?: string;
@@ -53,14 +54,17 @@ export default function Dashboard({ initialWeek }: { initialWeek: DayEntry[] | n
   >([]);
   const [chatLoading, setChatLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [inventoryNames, setInventoryNames] = useState<Set<string>>(new Set());
+  const [inventoryMap, setInventoryMap] = useState<Map<string, InventoryQty>>(new Map());
 
   useEffect(() => {
     fetch("/api/inventory")
       .then((res) => res.json())
       .then((data) => {
-        const names = (data.items ?? []).map((i: any) => i.item.toLowerCase().trim());
-        setInventoryNames(new Set(names));
+        const map = new Map<string, InventoryQty>();
+        (data.items ?? []).forEach((i: any) => {
+          map.set(i.item.toLowerCase().trim(), { quantity: i.quantity, unit: i.unit });
+        });
+        setInventoryMap(map);
       })
       .catch(() => {});
   }, []);
@@ -244,8 +248,8 @@ export default function Dashboard({ initialWeek }: { initialWeek: DayEntry[] | n
         {week && (
           <div className="mb-8 divide-y divide-[#1A1A1A]/8">
             {week.map(({ day, meal }) => {
-              const matchCount = meal.ingredients.filter((ing) =>
-                inventoryNames.has(ing.name.toLowerCase().trim())
+              const matchCount = meal.ingredients.filter(
+                (ing) => checkSufficiency(ing.quantity, ing.unit, inventoryMap.get(ing.name.toLowerCase().trim())) === "sufficient"
               ).length;
 
               return (
@@ -291,12 +295,15 @@ export default function Dashboard({ initialWeek }: { initialWeek: DayEntry[] | n
                         </h3>
                         <ul className="space-y-1.5 text-sm text-[#1A1A1A]/80 dark:text-[#F0F0F0]/80">
                           {meal.ingredients.map((ing, idx) => {
-                            const haveIt = inventoryNames.has(ing.name.toLowerCase().trim());
+                            const status = checkSufficiency(ing.quantity, ing.unit, inventoryMap.get(ing.name.toLowerCase().trim()));
                             return (
                               <li key={idx}>
                                 <span className="font-bold text-[#1A1A1A] dark:text-[#F0F0F0]">{ing.quantity} {ing.unit}</span> {ing.name}
-                                {haveIt && (
+                                {status === "sufficient" && (
                                   <span className="ml-1.5 text-xs font-bold" style={{ color: ACCENT }}>✓</span>
+                                )}
+                                {status === "insufficient" && (
+                                  <span className="ml-1.5 text-xs font-bold text-amber-600">⚠ not enough</span>
                                 )}
                               </li>
                             );
