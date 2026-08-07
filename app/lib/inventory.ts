@@ -7,6 +7,8 @@
 // (e.g. "green bean" as produce before generic "bean" as pantry) to avoid
 // misclassifying common overlaps.
 
+import { convertUnit } from "./units";
+
 export const CATEGORY_ORDER = [
   "Produce",
   "Meat & Seafood",
@@ -80,4 +82,34 @@ export function categorizeItem(itemName: string): (typeof CATEGORY_ORDER)[number
     }
   }
   return "Other";
+}
+
+// Whether inventory has enough of an ingredient for what's actually needed
+// — not just whether the ingredient is present by name. Having 1 jalapeño
+// when a scaled-up recipe needs 1.5 should warn, not show a checkmark.
+export interface InventoryQty {
+  quantity: number;
+  unit: string;
+}
+
+export type SufficiencyStatus = "sufficient" | "insufficient" | "not_tracked";
+
+export function checkSufficiency(
+  neededQuantity: number,
+  neededUnit: string,
+  inventoryEntry: InventoryQty | undefined
+): SufficiencyStatus {
+  if (!inventoryEntry) return "not_tracked";
+
+  const converted = convertUnit(inventoryEntry.quantity, inventoryEntry.unit, neededUnit);
+
+  if (converted === null) {
+    // Units aren't in the same convertible family (or one side is an
+    // unrecognized unit) — can't compare precisely. Falls back to treating
+    // presence as a loose match rather than blocking the badge on a
+    // comparison we can't actually make correctly.
+    return "sufficient";
+  }
+
+  return converted >= neededQuantity ? "sufficient" : "insufficient";
 }

@@ -4,6 +4,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { normalizeSteps, scaleIngredients, renderStepContent } from "../lib/steps";
+import { checkSufficiency, InventoryQty } from "../lib/inventory";
 import CookingMode from "./CookingMode";
 
 interface Ingredient {
@@ -63,14 +64,17 @@ export default function TodayView({
   const [error, setError] = useState<string | null>(null);
   const [cookingMode, setCookingMode] = useState(false);
   const [servingsOverride, setServingsOverride] = useState<Record<string, number>>({});
-  const [inventoryNames, setInventoryNames] = useState<Set<string>>(new Set());
+  const [inventoryMap, setInventoryMap] = useState<Map<string, InventoryQty>>(new Map());
 
   useEffect(() => {
     fetch("/api/inventory")
       .then((res) => res.json())
       .then((data) => {
-        const names = (data.items ?? []).map((i: any) => i.item.toLowerCase().trim());
-        setInventoryNames(new Set(names));
+        const map = new Map<string, InventoryQty>();
+        (data.items ?? []).forEach((i: any) => {
+          map.set(i.item.toLowerCase().trim(), { quantity: i.quantity, unit: i.unit });
+        });
+        setInventoryMap(map);
       })
       .catch(() => {});
   }, []);
@@ -168,9 +172,12 @@ export default function TodayView({
   const scaledIngredients = entry
     ? scaleIngredients(entry.meal.ingredients, baseServings, currentServings)
     : [];
-  const inventoryMatchCount = entry
-    ? entry.meal.ingredients.filter((ing) => inventoryNames.has(ing.name.toLowerCase().trim())).length
-    : 0;
+  // Uses the SCALED quantities — checking against the base recipe amount
+  // would say "have enough" for a 3x-servings batch based on what a single
+  // serving needed, which is exactly the bug this is fixing.
+  const inventoryMatchCount = scaledIngredients.filter(
+    (ing) => checkSufficiency(ing.quantity, ing.unit, inventoryMap.get(ing.name.toLowerCase().trim())) === "sufficient"
+  ).length;
 
   return (
     <main className="min-h-screen bg-white dark:bg-[#121212] px-5 py-8 md:px-10 md:py-12">
@@ -259,16 +266,25 @@ export default function TodayView({
                 </h3>
                 <ul className="space-y-2 text-sm text-[#1A1A1A]/85 dark:text-[#F0F0F0]/85">
                   {scaledIngredients.map((ing, i) => {
-                    const haveIt = inventoryNames.has(ing.name.toLowerCase().trim());
+                    const status = checkSufficiency(
+                      ing.quantity,
+                      ing.unit,
+                      inventoryMap.get(ing.name.toLowerCase().trim())
+                    );
                     return (
                       <li key={i}>
                         <span className="font-bold text-[#1A1A1A] dark:text-[#F0F0F0]">
                           {Math.round(ing.quantity * 100) / 100} {ing.unit}
                         </span>{" "}
                         {ing.name}
-                        {haveIt && (
-                          <span className="ml-1.5 text-xs" style={{ color: ACCENT }}>
+                        {status === "sufficient" && (
+                          <span className="ml-1.5 text-xs" style={{ color: ACCENT }} title="You have enough">
                             ✓
+                          </span>
+                        )}
+                        {status === "insufficient" && (
+                          <span className="ml-1.5 text-xs font-bold text-amber-600" title="You have some, but not enough for this amount">
+                            ⚠ not enough
                           </span>
                         )}
                       </li>
